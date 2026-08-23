@@ -1,30 +1,34 @@
 import { useCallback, useState, type ReactNode } from 'react';
+import { Slab } from './Slab';
 
 export interface StackEntry {
   id: string;
-  /** Still shown while this card is not the one being handled. */
+  /** Shown while this slab is not the one being handled. */
   still: string;
   name: string;
   set: string;
   tint: string;
+  /** Only one entry carries the live card; the rest are stills. */
+  real?: boolean;
 }
 
 interface CardStackProps {
   entries: StackEntry[];
-  /** Rendered into whichever slot the pointer is over — the only live card. */
-  live: (entry: StackEntry) => ReactNode;
+  /** Rendered inside whichever slab is being handled, if that slab is the real one. */
+  live: () => ReactNode;
+  onAngle?: (x: number, y: number) => void;
 }
 
 /**
- * A column of graded cards drifting upward.
+ * A column of graded slabs drifting upward.
  *
- * Only one card is ever the real thing. Browsers cap WebGL contexts at around
- * sixteen and a scrolling column would blow past that, so every slot is a still
- * until you put the pointer on it — then the column halts and that slot becomes
- * the live card you can turn. Which is also the honest interaction: you stop
- * the belt to pick something up.
+ * Each slot is the same case the maker produces — not a flat imitation of one —
+ * because the case is the product. Only one slab is ever the live card:
+ * browsers cap WebGL contexts at around sixteen and a scrolling column would
+ * run through that, so the rest hold a still. The belt halts under the pointer,
+ * and only the slab you are on tracks it.
  */
-export function CardStack({ entries, live }: CardStackProps) {
+export function CardStack({ entries, live, onAngle }: CardStackProps) {
   const [held, setHeld] = useState<string | null>(entries[0]?.id ?? null);
 
   const slot = useCallback(
@@ -36,24 +40,26 @@ export function CardStack({ entries, live }: CardStackProps) {
           key={key}
           data-held={isHeld}
           onPointerEnter={() => setHeld(entry.id)}
-          onPointerLeave={() =>
-            setHeld((current) => (current === entry.id ? entries[0]?.id ?? null : current))
-          }
         >
-          <div className="stack-label" style={{ ['--tint' as string]: entry.tint }}>
-            <span className="stack-set">{entry.set}</span>
-            <span className="stack-name">{entry.name}</span>
-            <span className="stack-grade">10</span>
-          </div>
-
-          <div className="stack-art">
-            {isHeld ? live(entry) : <img src={entry.still} alt="" loading="lazy" />}
-            <span className="stack-gloss" aria-hidden />
-          </div>
+          <Slab
+            encased
+            label={entry.name}
+            sublabel={`${entry.set} · LENTICARD`}
+            serial={`LC-${entry.id.replace(/\D/g, '').padStart(7, '0')}`}
+            tint={entry.tint}
+            interactive={isHeld}
+            onAngle={isHeld && entry.real ? onAngle : undefined}
+          >
+            {isHeld && entry.real ? (
+              live()
+            ) : (
+              <img className="stack-still" src={entry.still} alt="" loading="lazy" />
+            )}
+          </Slab>
         </div>
       );
     },
-    [held, live],
+    [held, live, onAngle],
   );
 
   return (
@@ -63,8 +69,6 @@ export function CardStack({ entries, live }: CardStackProps) {
         {/* A second pass, so the loop has somewhere to run to. */}
         {entries.map((entry) => slot(entry, `b-${entry.id}`))}
       </div>
-      <span className="stack-fade stack-fade-top" aria-hidden />
-      <span className="stack-fade stack-fade-bottom" aria-hidden />
     </div>
   );
 }

@@ -36,6 +36,8 @@ interface SlabProps {
   texture?: CaseTexture;
   grade?: string;
   onAngle?: (x: number, y: number) => void;
+  /** False parks it flat and stops it listening. */
+  interactive?: boolean;
   children: ReactNode;
 }
 
@@ -63,6 +65,7 @@ export function Slab({
   texture = 'clear',
   grade = '10',
   onAngle,
+  interactive = true,
   children,
 }: SlabProps) {
   const rig = useRef<HTMLDivElement>(null);
@@ -91,6 +94,11 @@ export function Slab({
   );
 
   useEffect(() => {
+    if (!interactive) {
+      px.set(0);
+      py.set(0);
+      return;
+    }
     const reset = () => {
       px.set(0);
       py.set(0);
@@ -102,7 +110,7 @@ export function Slab({
       window.removeEventListener('pointermove', track);
       document.removeEventListener('pointerleave', reset);
     };
-  }, [track, px, py, onAngle]);
+  }, [track, px, py, onAngle, interactive]);
 
   return (
     <div className="rig" ref={rig}>

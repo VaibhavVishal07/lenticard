@@ -18,6 +18,7 @@ import { CardStack, type StackEntry } from './components/CardStack';
 import { CASE_TEXTURES, CASE_TINTS, Slab, type CaseTexture } from './components/Slab';
 import { TradingCard } from './components/TradingCard';
 import { buildDefaultCard } from './lib/default-card';
+import { buildPlaceholders } from './lib/placeholders';
 import { INITIAL, type CardSettings } from './lib/presets';
 import { decodePayload, type SharePayload } from './lib/share';
 import { clearLocation, hasCardInLocation, loadFromLocation } from './lib/stores';
@@ -137,15 +138,19 @@ export default function App() {
 
   const images = useMemo(() => photos.map((p) => p.url), [photos]);
 
-  // The column beside the pitch. Every slot uses the same art for now; send
-  // more three-frame sets and each becomes its own card.
+  // The column beside the pitch: one real card, the rest waiting for art.
   const showcase = useMemo<StackEntry[]>(() => {
     const base = import.meta.env.BASE_URL;
     return [
-      { id: 's1', still: `${base}cards/astra-1.jpg`, name: 'Astra Volt', set: 'STORMBORN', tint: '#7d5cff' },
-      { id: 's2', still: `${base}cards/astra-2.jpg`, name: 'Astra Volt', set: 'FIRST PRINT', tint: '#2657b8' },
-      { id: 's3', still: `${base}cards/astra-3.jpg`, name: 'Astra Volt', set: 'GALLERY', tint: '#1c7a4f' },
-      { id: 's4', still: `${base}cards/astra-1.jpg`, name: 'Astra Volt', set: 'PRISM', tint: '#b8912f' },
+      {
+        id: 's1',
+        still: `${base}cards/astra-1.jpg`,
+        name: 'Astra Volt',
+        set: 'STORMBORN',
+        tint: '#2657b8',
+        real: true,
+      },
+      ...buildPlaceholders().map((p, i) => ({ ...p, id: `p${i + 2}` })),
     ];
   }, []);
   const ready = photos.length > 0 && !checking && held;
@@ -203,13 +208,14 @@ export default function App() {
           <div className="stage-stack">
             <CardStack
               entries={showcase}
+              onAngle={onAngle}
               live={() => (
                 <TradingCard
+                  ref={cardRef}
                   photos={images}
                   theme={cardTheme}
                   copy={copy}
                   layout="fullart"
-                  drive="pointer"
                   lenticules={settings.lenticules}
                   parallax={settings.parallax}
                   blend={settings.blend}
@@ -220,7 +226,8 @@ export default function App() {
           </div>
         )}
 
-        <div className="stage-case" data-home={stage === 'home'}>
+        {stage !== 'home' && (
+        <div className="stage-case">
           <Slab
             encased={encased}
             label={copy.title}
@@ -244,6 +251,7 @@ export default function App() {
             />
           </Slab>
         </div>
+        )}
 
         <div className="stage-side">
             {stage === 'home' && (
