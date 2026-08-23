@@ -7,10 +7,16 @@ interface TradingCardProps {
   photos: string[];
   /** The plain photograph, shown when nothing is on the card. */
   still?: string;
-  /** The print at four angles, blended by the cursor. Stands in for a live
+  /** The print at several angles, blended by the cursor. Stands in for a live
       lens on the belt, where browsers cap WebGL contexts well below the number
       of cases on screen. */
   views?: string[];
+  /** The photograph's own shape. A full bleed card takes it, so nothing of
+      what you uploaded is trimmed to suit a standard card. */
+  ratio?: number;
+  /** The photograph's strongest colour, for whatever the template outlines
+      the card with — so the frame looks like it belongs to the picture. */
+  tint?: string;
   theme: CardTheme;
   copy: CardCopy;
   layout: CardLayout;
@@ -38,7 +44,7 @@ interface TradingCardProps {
  */
 export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
   function TradingCard(
-    { photos, still, views, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
+    { photos, still, views, ratio, tint, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
     ref,
   ) {
     const art = (fill: boolean): ReactNode => (
@@ -83,7 +89,9 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           ['--b' as string]: theme.plate[1],
           ['--board' as string]: theme.board,
           ['--ink' as string]: theme.ink,
-          ['--accent' as string]: theme.accent,
+          ['--accent' as string]: tint ?? theme.accent,
+          ['--edge' as string]: tint ?? theme.plate[1],
+          ['--ratio' as string]: ratio ? String(ratio) : undefined,
         }}
       >
         {/* --- full bleed: the picture is the card ------------------------ */}

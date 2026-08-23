@@ -28,10 +28,13 @@ const RIDGES = 200;
 /**
  * How many angles the print is drawn at.
  *
- * Three snapped: a third of the loop holding, then a hard change. The live
- * card sweeps, so this has to have enough steps to dissolve rather than cut.
+ * These are sampled continuously between the frames, not picked from them.
+ * Rounding to the nearest frame meant four angles drawn from three frames
+ * produced leads of 0, 1, 1, 2 — two of the five were the same picture, so
+ * half the sweep of your cursor did nothing at all. That is what made it feel
+ * like work rather than like turning a card.
  */
-export const PHASES = 4;
+export const PHASES = 5;
 
 function load(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -60,10 +63,78 @@ function cover(img: HTMLImageElement, w: number, h: number) {
   return { dx: (w - dw) / 2, dy: (h - dh) / 2, dw, dh };
 }
 
+export interface Print {
+  /** The angles, blended between by the cursor. */
+  views: string[];
+  /** The photograph's own shape, so a full bleed card can take it. */
+  ratio: number;
+  /** Its strongest colour, for whatever the template outlines the card with. */
+  tint: string;
+}
+
+/**
+ * The one colour the picture is about.
+ *
+ * A plain average of every pixel comes back mud, because averaging opposite
+ * hues cancels them. This buckets by hue and weighs each pixel by how
+ * colourful and how well-lit it is, then returns the busiest bucket at a
+ * saturation and lightness that will read as an edge against a dark page —
+ * an outline has to be legible, not merely accurate.
+ */
+function dominant(img: HTMLImageElement): string {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return '#8b93a3';
+  ctx.drawImage(img, 0, 0, size, size);
+
+  let pixels: Uint8ClampedArray;
+  try {
+    pixels = ctx.getImageData(0, 0, size, size).data;
+  } catch {
+    // A cross-origin frame taints the canvas. Not worth failing the print for.
+    return '#8b93a3';
+  }
+
+  const BUCKETS = 24;
+  const weight = new Float64Array(BUCKETS);
+
+  for (let i = 0; i < pixels.length; i += 4) {
+    const r = pixels[i] / 255;
+    const g = pixels[i + 1] / 255;
+    const b = pixels[i + 2] / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const chroma = max - min;
+    if (chroma < 0.08) continue;
+
+    let hue: number;
+    if (max === r) hue = ((g - b) / chroma + 6) % 6;
+    else if (max === g) hue = (b - r) / chroma + 2;
+    else hue = (r - g) / chroma + 4;
+    hue *= 60;
+
+    // Mid-tones carry the identity of a picture; blown highlights and crushed
+    // shadows are the parts that happen to be there.
+    const light = (max + min) / 2;
+    weight[Math.floor(hue / (360 / BUCKETS)) % BUCKETS] +=
+      chroma * chroma * (1 - Math.abs(light - 0.5) * 1.4);
+  }
+
+  let best = 0;
+  for (let i = 1; i < BUCKETS; i++) if (weight[i] > weight[best]) best = i;
+  if (weight[best] === 0) return '#8b93a3';
+
+  const hue = Math.round((best + 0.5) * (360 / BUCKETS));
+  return `hsl(${hue} 82% 58%)`;
+}
+
 export async function interlacedViews(
   urls: string[],
   width = 800,
-): Promise<string[]> {
+): Promise<Print> {
   const frames = await Promise.all(urls.slice(0, 6).map(load));
   if (!frames.length) throw new Error('An interlace needs at least one frame');
 
@@ -82,8 +153,11 @@ export async function interlacedViews(
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('This browser has no 2D canvas');
 
-    // The frame this angle favours, from full left tilt to full right.
-    const lead = Math.round((view / Math.max(1, PHASES - 1)) * last);
+    // Where on the sweep this angle sits, from full left tilt to full right.
+    // Between two frames rather than on one, so every angle is its own picture.
+    const at = (view / Math.max(1, PHASES - 1)) * last;
+    const lead = Math.min(last, Math.floor(at));
+    const carry = at - lead;
 
     ctx.fillStyle = '#05060a';
     ctx.fillRect(0, 0, width, height);
@@ -94,6 +168,14 @@ export async function interlacedViews(
     };
 
     draw(lead);
+    // The next frame, part way in. This is the sweep itself; the strips below
+    // are the lens the sweep is seen through.
+    if (carry > 0 && lead < last) {
+      ctx.save();
+      ctx.globalAlpha = carry;
+      draw(lead + 1);
+      ctx.restore();
+    }
 
     // The neighbours, woven through it. A lens with a wide interlace never
     // shows one frame cleanly — that is the whole reason the surface reads as
@@ -169,5 +251,5 @@ export async function interlacedViews(
     await new Promise((resolve) => window.setTimeout(resolve, 0));
   }
 
-  return views;
+  return { views, ratio: width / height, tint: dominant(frames[0]) };
 }

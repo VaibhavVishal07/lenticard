@@ -2395,3 +2395,60 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 /* With no foot strip to leave room for, the card sits square in the sleeve. */
 .slab[data-kind='toploader'] .slab-card { top: 8cqw; }
 .slab[data-kind='sleeve'] .slab-card { top: 14cqw; }
+
+/* =========================================================================
+   The frame belongs to the picture
+
+   Where a template outlines the card, the outline is the photograph's own
+   strongest colour rather than a palette chosen in advance — so a magenta
+   card is not sitting inside a lime border wondering what it is doing there.
+   The palette still sets everything the picture has no opinion about.
+   ========================================================================= */
+
+.tc[data-tpl='rookie'] .tc-body { background: var(--edge, var(--b)); }
+.tc[data-tpl='rookie'] .tc-seal { background: var(--edge, var(--b)); }
+.tc[data-tpl='chrome'] .tc-cut { background: var(--accent); }
+.tc[data-tpl='refractor'] .tc-rule {
+  background: linear-gradient(
+    140deg,
+    color-mix(in oklab, var(--accent) 30%, #fff),
+    var(--accent) 46%,
+    color-mix(in oklab, var(--accent) 22%, #fff) 70%,
+    color-mix(in oklab, var(--accent) 70%, #000)
+  );
+}
+.tc[data-tpl='fullart'] .tc-hair {
+  box-shadow:
+    inset 0 0 0 0.3cqw color-mix(in oklab, var(--accent) 55%, #fff),
+    inset 0 0 0 0.62cqw rgba(0, 0, 0, 0.34);
+}
+
+/* =========================================================================
+   A full bleed is the photograph
+
+   Every other template is a frame with a window cut in it, so a standard card
+   shape is right. Full bleed has no frame — the picture is the card — so
+   forcing it to 63x88 was trimming whatever was uploaded to suit a shape the
+   template does not have. It takes the photograph's own proportions.
+   ========================================================================= */
+
+.tc[data-tpl='fullart'] .tc-body { aspect-ratio: var(--ratio, 63 / 88); }
+.tc[data-tpl='fullart'] .tc-art .tc-still,
+.tc[data-tpl='fullart'] .tc-art .lc-card { object-fit: contain; }
+
+/* =========================================================================
+   Room to catch the card
+
+   The turn used to be driven from the card itself, which on a leaning case in
+   a moving belt is a small target you have to chase. The zone reaches into
+   the gap on every side — invisible, and no wider than half the space between
+   two cases, so neighbours never fight over the pointer.
+   ========================================================================= */
+
+.stack-slot { position: relative; }
+.stack-slot::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--stack-gap) * -0.45) -1.6rem;
+  z-index: 0;
+}

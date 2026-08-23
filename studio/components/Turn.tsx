@@ -8,10 +8,19 @@ interface TurnProps {
 }
 
 /** How fast the turn catches up to the cursor. Higher is snappier. */
-const CHASE = 0.16;
+const CHASE = 0.38;
 
 /** How fast the lens fades in when you arrive and out when you leave. */
-const FADE = 0.09;
+const FADE = 0.16;
+
+/**
+ * How much of the card a full sweep takes.
+ *
+ * Below one, the middle of the card covers the whole range and the edges are
+ * held at the extremes — so a small movement turns the card a long way. At one
+ * you have to travel the entire width to see everything, which is work.
+ */
+const REACH = 0.5;
 
 /**
  * A lens you have to turn.
@@ -40,6 +49,9 @@ export function Turn({ flat, views }: TurnProps) {
     if (!node) return;
 
     const card = node.closest('.tc') ?? node;
+    // A leaning case on a moving belt is a small target to chase, so the
+    // pointer is taken from the slot, which reaches into the gap either side.
+    const zone = node.closest('.stack-slot') ?? card;
     const layers = Array.from(node.querySelectorAll<HTMLImageElement>('.tc-view'));
     if (layers.length < 2) return;
 
@@ -81,7 +93,9 @@ export function Turn({ flat, views }: TurnProps) {
       const rect = card.getBoundingClientRect();
       if (!rect.width) return;
       const x = (event as PointerEvent).clientX;
-      target = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
+      const across = (x - rect.left) / rect.width;
+      const turned = (across - 0.5) / REACH + 0.5;
+      target = Math.max(0, Math.min(1, turned));
       wanted = 1;
       wake();
     };
@@ -93,13 +107,13 @@ export function Turn({ flat, views }: TurnProps) {
       wake();
     };
 
-    card.addEventListener('pointermove', move, { passive: true });
-    card.addEventListener('pointerleave', leave);
+    zone.addEventListener('pointermove', move, { passive: true });
+    zone.addEventListener('pointerleave', leave);
     paint();
 
     return () => {
-      card.removeEventListener('pointermove', move);
-      card.removeEventListener('pointerleave', leave);
+      zone.removeEventListener('pointermove', move);
+      zone.removeEventListener('pointerleave', leave);
       if (frame) cancelAnimationFrame(frame);
     };
   }, [views]);

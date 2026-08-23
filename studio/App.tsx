@@ -18,7 +18,7 @@ import { CardStack, type StackEntry } from './components/CardStack';
 import { CASE_KINDS, Slab, type CaseKind } from './components/Slab';
 import { TradingCard } from './components/TradingCard';
 import { buildDefaultCard } from './lib/default-card';
-import { interlacedViews } from './lib/interlace';
+import { interlacedViews, type Print } from './lib/interlace';
 import { INITIAL, type CardSettings } from './lib/presets';
 import { decodePayload, type SharePayload } from './lib/share';
 import { clearLocation, hasCardInLocation, loadFromLocation } from './lib/stores';
@@ -159,7 +159,7 @@ export default function App() {
    * the maker is holding is woven too, so what the belt shows is the print
    * that would actually come out.
    */
-  const [woven, setWoven] = useState<Record<string, string[]>>({});
+  const [woven, setWoven] = useState<Record<string, Print>>({});
   useEffect(() => {
     const base = import.meta.env.BASE_URL;
     const sets: Record<string, string[]> = {
@@ -171,8 +171,8 @@ export default function App() {
     for (const [name, urls] of Object.entries(sets)) {
       if (urls.length < 2) continue;
       void interlacedViews(urls)
-        .then((views) => {
-          if (!cancelled) setWoven((current) => ({ ...current, [name]: views }));
+        .then((print) => {
+          if (!cancelled) setWoven((current) => ({ ...current, [name]: print }));
         })
         .catch(() => {
           /* that set falls back to its plain frame */
@@ -284,7 +284,9 @@ export default function App() {
                   <TradingCard
                     photos={images}
                     still={isLive ? undefined : entry.still}
-                    views={isLive ? undefined : woven[entry.art]}
+                    views={isLive ? undefined : woven[entry.art]?.views}
+                    ratio={woven[entry.art]?.ratio}
+                    tint={woven[entry.art]?.tint}
                     theme={entryTheme}
                     copy={{ ...copyFor(entryTheme), title: entry.name }}
                     layout={entry.layout}
@@ -338,6 +340,8 @@ export default function App() {
             <TradingCard
               ref={cardRef}
               photos={images}
+              ratio={woven.astra?.ratio}
+              tint={woven.astra?.tint}
               theme={cardTheme}
               copy={copy}
               layout={layout}
