@@ -106,7 +106,9 @@ export function Turn({ flat, views }: TurnProps) {
 
   return (
     <span className="tc-turn" ref={host}>
-      <img className="tc-still tc-flat" src={flat} alt="" loading="lazy" />
+      {/* Never deferred. This is the card at rest, and a case scrolling into
+          the belt with its photograph still loading is an empty frame. */}
+      <img className="tc-still tc-flat" src={flat} alt="" />
       {views.map((src, i) => (
         <img key={i} className="tc-still tc-view" src={src} alt="" loading="lazy" />
       ))}
