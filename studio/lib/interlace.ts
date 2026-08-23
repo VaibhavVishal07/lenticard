@@ -43,9 +43,18 @@ function load(url: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Contain, never cover: the whole photograph, the way the card shows it. */
-function contain(img: HTMLImageElement, w: number, h: number) {
-  const scale = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+/**
+ * Fill, and let CSS do the cropping.
+ *
+ * The sheet used to be a fixed 63:88 with the photograph letterboxed into it,
+ * which baked black bars down both sides — so arriving on a card swapped an
+ * edge-to-edge picture for a barred one, and the hover looked like a crop.
+ * The sheet takes the photograph's own shape now and every frame fills it, so
+ * the woven views and the plain frame are the same picture and object-fit
+ * treats them identically. What you see before you touch it is what you keep.
+ */
+function cover(img: HTMLImageElement, w: number, h: number) {
+  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
   const dw = img.naturalWidth * scale;
   const dh = img.naturalHeight * scale;
   return { dx: (w - dw) / 2, dy: (h - dh) / 2, dw, dh };
@@ -54,12 +63,13 @@ function contain(img: HTMLImageElement, w: number, h: number) {
 export async function interlacedViews(
   urls: string[],
   width = 800,
-  height = 1117,
 ): Promise<string[]> {
   const frames = await Promise.all(urls.slice(0, 6).map(load));
   if (!frames.length) throw new Error('An interlace needs at least one frame');
 
-  const boxes = frames.map((img) => contain(img, width, height));
+  // The sheet is the shape of the first frame, so that one is never touched.
+  const height = Math.round((width * frames[0].naturalHeight) / frames[0].naturalWidth);
+  const boxes = frames.map((img) => cover(img, width, height));
   const strip = width / RIDGES;
   const last = frames.length - 1;
 
