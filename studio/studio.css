@@ -37,12 +37,12 @@
      Change it here, or try a size without a rebuild from the console:
        document.documentElement.style.setProperty('--stack-card', '470px')
      Add ?card=470 to the URL for the same thing on a page you can share. */
-  --stack-card: 390px;
+  --stack-card: 410px;
 
   /* Space from one case to the next in the column, and space between the
      pitch and the column. Both are here so ?tune can reach them. */
-  --stack-gap: 1.75rem;
-  --stage-gap: clamp(1.5rem, 5vw, 4.5rem);
+  --stack-gap: 2.5rem;
+  --stage-gap: 5rem;
   --gutter: clamp(1.25rem, 5vw, 2.5rem);
 
   /* The one accent, used everywhere. */
@@ -1946,4 +1946,11 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 
 @media (max-width: 940px) {
   .tuner { width: auto; right: var(--gutter); }
+}
+
+/* --stage-gap is a column gap on a wide screen and a row gap once the stage
+   stacks, and 5rem of vertical space between the column and the pitch is a
+   lot of nothing on a phone. Their number holds where it was chosen. */
+@media (max-width: 940px) {
+  .stage { gap: min(var(--stage-gap), 2.25rem); }
 }
