@@ -14,11 +14,6 @@ export function Dock({ children }: { children: ReactNode }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3, ease: [0.32, 0.72, 0, 1] }}
       >
-        <span className="mark">
-          <span className="mark-chip" aria-hidden />
-          lenticard
-        </span>
-        <span className="dock-sep" aria-hidden />
         <div className="dock-actions">{children}</div>
       </motion.div>
     </div>

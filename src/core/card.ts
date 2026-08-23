@@ -157,7 +157,11 @@ export function createLenticularCard(
       measure();
 
       engine.setFrames(loaded);
+      // A card at rest stops drawing after a few idle frames. Decoding real
+      // images takes longer than that, so by the time the textures land the
+      // loop is already parked and nothing would ever paint them.
       idleFrames = 0;
+      start();
       root.dataset.state = 'ready';
       config.onReady?.({ orientation, axis, aspect: mean });
     } catch (error) {

@@ -14,6 +14,7 @@ import { Dock } from './components/Dock';
 import { frameFromDataUrl, Frames, framesFromFiles, type Frame } from './components/Frames';
 import { Greeting } from './components/Greeting';
 import { SendPanel } from './components/SendPanel';
+import { CardStack, type StackEntry } from './components/CardStack';
 import { CASE_TEXTURES, CASE_TINTS, Slab, type CaseTexture } from './components/Slab';
 import { TradingCard } from './components/TradingCard';
 import { buildDefaultCard } from './lib/default-card';
@@ -135,6 +136,18 @@ export default function App() {
   }, []);
 
   const images = useMemo(() => photos.map((p) => p.url), [photos]);
+
+  // The column beside the pitch. Every slot uses the same art for now; send
+  // more three-frame sets and each becomes its own card.
+  const showcase = useMemo<StackEntry[]>(() => {
+    const base = import.meta.env.BASE_URL;
+    return [
+      { id: 's1', still: `${base}cards/astra-1.jpg`, name: 'Astra Volt', set: 'STORMBORN', tint: '#7d5cff' },
+      { id: 's2', still: `${base}cards/astra-2.jpg`, name: 'Astra Volt', set: 'FIRST PRINT', tint: '#2657b8' },
+      { id: 's3', still: `${base}cards/astra-3.jpg`, name: 'Astra Volt', set: 'GALLERY', tint: '#1c7a4f' },
+      { id: 's4', still: `${base}cards/astra-1.jpg`, name: 'Astra Volt', set: 'PRISM', tint: '#b8912f' },
+    ];
+  }, []);
   const ready = photos.length > 0 && !checking && held;
 
   const serial = useMemo(() => {
@@ -181,31 +194,32 @@ export default function App() {
 
   return (
     <>
-      {stage === 'home' && (
-        <div className="wall" aria-hidden>
-          {[...Array(14)].map((_, col) => (
-            <div className="wall-col" data-dir={col % 2} key={col}>
-              {[...Array(10)].map((_, i) => (
-                <span className="wall-card" data-v={(col * 3 + i) % 6} key={i} />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <header className="brand">
-        <span className="mark">
-          <span className="mark-chip" aria-hidden />
-          lenticard
-        </span>
-      </header>
-
       <main className="stage" data-stage={stage}>
         {/* One card, mounted once, for every stage. Re-parenting it between
             layouts tore down the WebGL context and rebuilt it, which is what
             produced the jolt on entering the maker. It lives here now and the
             page moves around it. */}
-        <div className="stage-case">
+        {stage === 'home' && (
+          <div className="stage-stack">
+            <CardStack
+              entries={showcase}
+              live={() => (
+                <TradingCard
+                  photos={images}
+                  theme={cardTheme}
+                  copy={copy}
+                  layout="fullart"
+                  lenticules={settings.lenticules}
+                  parallax={settings.parallax}
+                  blend={settings.blend}
+                  sheen={settings.sheen}
+                />
+              )}
+            />
+          </div>
+        )}
+
+        <div className="stage-case" data-home={stage === 'home'}>
           <Slab
             encased={encased}
             label={copy.title}
@@ -239,7 +253,10 @@ export default function App() {
                 animate={{ opacity: ready ? 1 : 0, y: 0 }}
                 transition={{ duration: 0.6, ease: EASE }}
               >
-                <p className="kicker">Graded, slabbed, one of one</p>
+                <span className="mark mark-hero">
+                  <span className="mark-chip" aria-hidden />
+                  lenticard
+                </span>
                 <h1>
                   Your own <em>lenticular</em> trading card
                 </h1>
@@ -535,14 +552,14 @@ export default function App() {
               </button>
               {stage === 'make' && (
                 <button
-                  className="btn btn-holo"
+                  className="btn btn-white btn-wide"
                   disabled={photos.length < 2}
                   onClick={() => {
                     setEncased(true);
                     setStage('send');
                   }}
                 >
-                  <PaperPlaneTilt size={15} weight="bold" />
+                  <PaperPlaneTilt size={16} weight="bold" />
                   Seal and send
                 </button>
               )}
