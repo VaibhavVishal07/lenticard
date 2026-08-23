@@ -1,6 +1,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { Slab } from './Slab';
 import type { CardLayout } from '../lib/themes';
+import type { CaseKind } from './Slab';
 
 export interface StackEntry {
   id: string;
@@ -8,11 +9,10 @@ export interface StackEntry {
   still: string;
   name: string;
   set: string;
-  tint: string;
   /** Which template this slab is showing off. */
   layout: CardLayout;
-  /** Which occasion supplies its palette and printing. */
-  themeId: string;
+  /** And what it arrives in, so the column shows both axes at once. */
+  kind: CaseKind;
   /** Only one entry carries the live card; the rest are stills. */
   real?: boolean;
 }
@@ -21,7 +21,6 @@ interface CardStackProps {
   entries: StackEntry[];
   /** Given the slot and whether it is the live one, returns the card to print. */
   render: (entry: StackEntry, live: boolean) => ReactNode;
-  onAngle?: (x: number, y: number) => void;
 }
 
 /**
@@ -36,7 +35,7 @@ interface CardStackProps {
  * entry meant the belt was paused on its own first frame and never moved at
  * all, which is a different fault from a belt that is too slow to notice.
  */
-export function CardStack({ entries, render, onAngle }: CardStackProps) {
+export function CardStack({ entries, render }: CardStackProps) {
   const [held, setHeld] = useState<string | null>(null);
 
   const slot = useCallback(
@@ -45,7 +44,11 @@ export function CardStack({ entries, render, onAngle }: CardStackProps) {
       // The belt is doubled so the loop has somewhere to run to. Only the first
       // pass carries the live lens, or the seam would cost a second WebGL
       // context for a card nobody is looking at.
-      const live = entry.real === true && !duplicate;
+      // The card under the pointer becomes a real lens. Every slab flips, not
+      // just the one that happens to be seeded — a belt of stills that only one
+      // of moves is a belt of pictures of a card. Two contexts at most: the
+      // permanent one, and whichever you are pointing at.
+      const live = !duplicate && (entry.real === true || isHeld);
       return (
         <div
           className="stack-slot"
@@ -58,16 +61,15 @@ export function CardStack({ entries, render, onAngle }: CardStackProps) {
             label={entry.name}
             sublabel={`${entry.set} · LENTICARD`}
             serial={`LC-${entry.id.replace(/\D/g, '').padStart(7, '0')}`}
-            tint={entry.tint}
+            kind={entry.kind}
             interactive={isHeld}
-            onAngle={isHeld && live ? onAngle : undefined}
           >
             {render(entry, live)}
           </Slab>
         </div>
       );
     },
-    [held, render, onAngle],
+    [held, render],
   );
 
   return (

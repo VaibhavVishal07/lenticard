@@ -11,8 +11,7 @@ interface SendPanelProps {
   title: string;
   themeId: string;
   layout: string;
-  tint: string;
-  texture: string;
+  caseKind: string;
   replyTo?: string;
   onError: (message: string) => void;
 }
@@ -28,8 +27,7 @@ export function SendPanel({
   title,
   themeId,
   layout,
-  tint,
-  texture,
+  caseKind,
   replyTo,
   onError,
 }: SendPanelProps) {
@@ -61,8 +59,7 @@ export function SendPanel({
         caption: title,
         theme: themeId,
         layout,
-        tint,
-        texture,
+        caseKind,
         settings: diffFromDefaults(settings),
         mime: packed.mime,
       },

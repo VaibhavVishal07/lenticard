@@ -3,26 +3,24 @@ import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 
 const EASE = [0.32, 0.72, 0, 1] as const;
 
-export type CaseTexture = 'clear' | 'frosted' | 'carbon' | 'holo';
-
-export const CASE_TEXTURES: Array<{ id: CaseTexture; label: string }> = [
-  { id: 'clear', label: 'Gloss' },
-  { id: 'frosted', label: 'Frosted' },
-  { id: 'carbon', label: 'Textured' },
-  { id: 'holo', label: 'Holo edge' },
-];
+export type CaseKind = 'slab' | 'toploader' | 'sleeve' | 'pack';
 
 /**
- * The stripe down the label. The label itself stays white on every one of
- * these, because a grading label is a document and documents are read.
+ * What the card is sold in.
+ *
+ * These replaced a row of colour swatches. A red holder and a blue holder are
+ * the same object twice; a graded slab, a toploader, a soft sleeve and a
+ * heat-sealed pack are four different things to be handed, and which one it
+ * arrives in says more than what colour it is.
+ *
+ * Every kind still carries the printing somewhere on the case — a label, a
+ * foot strip, a flap, a header — because the card itself stays pristine.
  */
-export const CASE_TINTS = [
-  { id: 'red', label: 'Red', value: '#d5352b' },
-  { id: 'ink', label: 'Ink', value: '#1b1d22' },
-  { id: 'gold', label: 'Gold', value: '#b8912f' },
-  { id: 'green', label: 'Green', value: '#1c7a4f' },
-  { id: 'blue', label: 'Blue', value: '#2657b8' },
-  { id: 'violet', label: 'Violet', value: '#6b3fc4' },
+export const CASE_KINDS: Array<{ id: CaseKind; label: string; hint: string }> = [
+  { id: 'slab', label: 'Graded slab', hint: 'Rigid acrylic holder with a grading label' },
+  { id: 'toploader', label: 'Toploader', hint: 'Clear rigid sleeve, printing along the foot' },
+  { id: 'sleeve', label: 'Sleeve', hint: 'Soft poly sleeve with a folded flap' },
+  { id: 'pack', label: 'Sealed pack', hint: 'Heat-sealed bag with a printed header' },
 ];
 
 interface SlabProps {
@@ -32,8 +30,8 @@ interface SlabProps {
   /** The set line above the name. */
   sublabel?: string;
   serial?: string;
-  tint?: string;
-  texture?: CaseTexture;
+  /** What the card is sold in. */
+  kind?: CaseKind;
   grade?: string;
   onAngle?: (x: number, y: number) => void;
   /** False parks it flat and stops it listening. */
@@ -61,8 +59,7 @@ export function Slab({
   label = 'Lenticular',
   sublabel = 'LENTICARD',
   serial = 'LC-0000000',
-  tint = '#d5352b',
-  texture = 'clear',
+  kind = 'slab',
   grade = '10',
   onAngle,
   interactive = true,
@@ -125,8 +122,8 @@ export function Slab({
       <motion.div
         className="slab"
         data-encased={encased}
-        data-texture={texture}
-        style={{ rotateX, rotateY, ['--tint' as string]: tint }}
+        data-kind={kind}
+        style={{ rotateX, rotateY }}
       >
         <div className="slab-back" />
 
@@ -182,6 +179,14 @@ export function Slab({
         </motion.div>
 
         <motion.div className="slab-glass" style={{ ['--shine' as string]: shine }} />
+
+        {/* Soft plastic. The crinkle is what separates a bag from a box — a
+            flat clear rectangle reads as glass no matter how it is tinted. */}
+        {(kind === 'sleeve' || kind === 'pack') && (
+          <span className="slab-crinkle" aria-hidden />
+        )}
+        {kind === 'sleeve' && <span className="slab-flap" aria-hidden />}
+        {kind === 'pack' && <span className="slab-seal" aria-hidden />}
 
         <span className="slab-edge slab-edge-t" />
         <span className="slab-edge slab-edge-b" />

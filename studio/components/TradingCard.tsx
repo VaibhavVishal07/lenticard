@@ -59,7 +59,7 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           tilt={drive === 'pointer' ? 9 : 0}
           float={0}
           radius={0}
-          fit="cover"
+          fit="contain"
           onError={onError}
         />
         )}

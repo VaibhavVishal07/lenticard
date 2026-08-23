@@ -822,15 +822,8 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-.slab[data-texture='frosted'] .slab-shell {
-  background: linear-gradient(168deg, #33373f, #191d23 45%, #262a32);
-}
-.slab[data-texture='carbon'] .slab-shell {
-  background-image:
-    repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 2px, transparent 2px 5px),
-    repeating-linear-gradient(-45deg, rgba(0,0,0,.3) 0 2px, transparent 2px 5px),
-    linear-gradient(168deg, #24272e, #101318 42%, #1b1e25);
-}
+
+
 
 .slab-glass {
   transform: translateZ(11px);
@@ -849,17 +842,7 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
     inset 0 0 0 1px rgba(255, 255, 255, 0.1),
     inset 0 -1px 0 rgba(0, 0, 0, 0.5);
 }
-.slab[data-texture='holo'] .slab-glass::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  opacity: 0.26;
-  background: var(--holo);
-  background-size: 240% 100%;
-  background-position: var(--shine, 50%) 0;
-  mix-blend-mode: overlay;
-}
+
 
 /* --- cut edges ----------------------------------------------------------- */
 
@@ -2007,3 +1990,246 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   }
   .pitch .lede { margin-inline: auto; }
 }
+
+/* =========================================================================
+   Four things a card can arrive in
+
+   The graded slab is one of them, not the only one. A toploader is thin rigid
+   clear with the printing pushed down to the foot; a sleeve is soft plastic
+   with a folded flap; a pack is heat-sealed with a header band across the top.
+   Every kind still carries the printing on the case, never on the card.
+
+   Each is a different object rather than the holder recoloured, so the shell,
+   the proportions, where the printing sits and whether the case has cut edges
+   at all change between them.
+   ========================================================================= */
+
+.slab-crinkle,
+.slab-flap,
+.slab-seal {
+  position: absolute;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+/* Soft plastic catches light in long uneven bands rather than one clean
+   specular. Two repeating gradients at different angles and periods read as
+   creased film; one reads as a striped rectangle. */
+.slab-crinkle {
+  inset: 0;
+  z-index: 7;
+  transform: translateZ(12px);
+  border-radius: inherit;
+  opacity: 0.5;
+  mix-blend-mode: screen;
+  background:
+    repeating-linear-gradient(
+      74deg,
+      rgba(255, 255, 255, 0) 0 4%,
+      rgba(255, 255, 255, 0.07) 5%,
+      rgba(255, 255, 255, 0) 7% 13%
+    ),
+    repeating-linear-gradient(
+      99deg,
+      rgba(255, 255, 255, 0) 0 6%,
+      rgba(255, 255, 255, 0.05) 8%,
+      rgba(255, 255, 255, 0) 9% 19%
+    ),
+    linear-gradient(112deg, rgba(255, 255, 255, 0.09), transparent 38%);
+}
+
+/* --- toploader: rigid clear, printing along the foot -------------------- */
+
+.slab[data-kind='toploader'] { aspect-ratio: 76 / 112; }
+
+.slab[data-kind='toploader'] .slab-shell {
+  background: linear-gradient(168deg, rgba(150, 162, 178, 0.13), rgba(10, 12, 16, 0.5) 46%, rgba(120, 132, 148, 0.1));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.slab[data-kind='toploader'] .slab-back {
+  background: linear-gradient(168deg, #14171d, #06070a 60%, #10131a);
+}
+.slab[data-kind='toploader'] .slab-ledge,
+.slab[data-kind='toploader'] .slab-well,
+.slab[data-kind='toploader'] .lab-grade,
+.slab[data-kind='toploader'] .lab-num { display: none; }
+
+/* The printing drops to the foot, because there is no tray to sit in. */
+.slab[data-kind='toploader'] .lab-tray {
+  inset: auto 3cqw 2.6cqw;
+  height: 12cqw;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+.slab[data-kind='toploader'] .lab {
+  gap: 0.8cqw;
+  padding: 1.4cqw 1.8cqw;
+  border-radius: 0.7cqw;
+}
+.slab[data-kind='toploader'] .lab-name { font-size: 3.4cqw; }
+.slab[data-kind='toploader'] .lab-set { font-size: 1.6cqw; }
+.slab[data-kind='toploader'] .slab-card {
+  left: 4.5cqw;
+  right: 4.5cqw;
+  top: 4.5cqw;
+}
+/* Thinner than a slab, because it is. */
+.slab[data-kind='toploader'] .slab-edge-t,
+.slab[data-kind='toploader'] .slab-edge-b { height: 9px; }
+.slab[data-kind='toploader'] .slab-edge-l,
+.slab[data-kind='toploader'] .slab-edge-r { width: 9px; }
+.slab[data-kind='toploader'] .slab-edge {
+  background: linear-gradient(180deg, #7f8895 0%, #3d434c 42%, #191d23 100%);
+  opacity: 0.75;
+}
+
+/* --- sleeve: soft poly with a folded flap ------------------------------- */
+
+.slab[data-kind='sleeve'] { aspect-ratio: 80 / 118; }
+
+.slab[data-kind='sleeve'] .slab-shell {
+  border-radius: 2.5cqw;
+  background: linear-gradient(168deg, rgba(180, 190, 205, 0.1), rgba(8, 10, 14, 0.42) 52%, rgba(150, 162, 178, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.13);
+}
+.slab[data-kind='sleeve'] .slab-back {
+  border-radius: 2.5cqw;
+  background: linear-gradient(168deg, #131720, #06070b 62%, #0f131a);
+}
+.slab[data-kind='sleeve'] .slab-glass { border-radius: 2.5cqw; }
+.slab[data-kind='sleeve'] .slab-ledge,
+.slab[data-kind='sleeve'] .slab-well,
+.slab[data-kind='sleeve'] .lab-grade,
+.slab[data-kind='sleeve'] .lab-num,
+.slab[data-kind='sleeve'] .slab-edge { display: none; }
+
+/* The fold. A sleeve's flap is the part that is doubled over, so it is
+   brighter than the rest of the film and has a crease along its bottom. */
+.slab[data-kind='sleeve'] .slab-flap {
+  inset: 0 0 auto;
+  height: 13cqw;
+  z-index: 8;
+  transform: translateZ(13px);
+  border-radius: 2.5cqw 2.5cqw 0.4cqw 0.4cqw;
+  background: linear-gradient(180deg, rgba(226, 233, 244, 0.22), rgba(160, 172, 190, 0.09));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.slab[data-kind='sleeve'] .lab-tray {
+  inset: 2.4cqw 3.4cqw auto;
+  height: 8.4cqw;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  z-index: 9;
+  transform: translateZ(14px);
+}
+.slab[data-kind='sleeve'] .lab {
+  gap: 0;
+  padding: 1cqw 1.6cqw;
+  border-radius: 0.5cqw;
+  grid-template-rows: 1fr;
+}
+.slab[data-kind='sleeve'] .lab-foot { display: none; }
+.slab[data-kind='sleeve'] .lab-name { font-size: 3.2cqw; }
+.slab[data-kind='sleeve'] .lab-set { font-size: 1.5cqw; }
+.slab[data-kind='sleeve'] .slab-card {
+  left: 4cqw;
+  right: 4cqw;
+  top: 15cqw;
+}
+
+/* --- pack: heat-sealed, printed header, zip along the top --------------- */
+
+.slab[data-kind='pack'] { aspect-ratio: 82 / 128; }
+
+.slab[data-kind='pack'] .slab-shell {
+  border-radius: 1.2cqw;
+  background: linear-gradient(168deg, rgba(160, 172, 190, 0.11), rgba(6, 8, 11, 0.55) 50%, rgba(140, 152, 170, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.11);
+}
+.slab[data-kind='pack'] .slab-back {
+  border-radius: 1.2cqw;
+  background: linear-gradient(168deg, #101319, #05060a 62%, #0d1016);
+}
+.slab[data-kind='pack'] .slab-glass { border-radius: 1.2cqw; }
+.slab[data-kind='pack'] .slab-ledge,
+.slab[data-kind='pack'] .slab-well,
+.slab[data-kind='pack'] .lab-grade,
+.slab[data-kind='pack'] .slab-edge { display: none; }
+
+/* The seal: a pressed strip with the tooth marks of a heat bar. */
+.slab[data-kind='pack'] .slab-seal {
+  inset: 5.6cqw 0 auto;
+  height: 1.6cqw;
+  z-index: 8;
+  transform: translateZ(13px);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.26) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(0, 0, 0, 0.34));
+}
+
+.slab[data-kind='pack'] .lab-tray {
+  inset: 0 0 auto;
+  height: 5.6cqw;
+  padding: 0;
+  border-radius: 1.2cqw 1.2cqw 0 0;
+  background: none;
+  box-shadow: none;
+  z-index: 9;
+  transform: translateZ(14px);
+}
+.slab[data-kind='pack'] .lab {
+  gap: 0;
+  padding: 0.7cqw 2cqw;
+  border-radius: 1.2cqw 1.2cqw 0 0;
+  grid-template-rows: 1fr;
+  align-items: center;
+}
+.slab[data-kind='pack'] .lab-main { align-items: center; }
+.slab[data-kind='pack'] .lab-name { font-size: 2.6cqw; }
+.slab[data-kind='pack'] .lab-set { font-size: 1.3cqw; }
+.slab[data-kind='pack'] .lab-num { display: none; }
+.slab[data-kind='pack'] .lab-foot {
+  grid-row: 1;
+  grid-column: 2;
+  align-self: center;
+}
+.slab[data-kind='pack'] .lab-bars { transform: scale(0.62); transform-origin: right center; }
+.slab[data-kind='pack'] .lab-cert { display: none; }
+.slab[data-kind='pack'] .slab-card {
+  left: 5cqw;
+  right: 5cqw;
+  top: 11cqw;
+}
+
+/* --- soft-case corrections ---------------------------------------------- */
+
+/* The header was a hairline with a name squeezed into it, and the bag hung a
+   long way below the card doing nothing. Both are the proportions of the real
+   thing: the header is a printed band you could actually read, and the slack
+   below the card is a hand's width, not a third of the bag. */
+.slab[data-kind='pack'] { aspect-ratio: 82 / 120; }
+.slab[data-kind='pack'] .lab-tray { height: 9cqw; }
+.slab[data-kind='pack'] .lab { padding: 1.1cqw 2.2cqw; }
+.slab[data-kind='pack'] .lab-name { font-size: 3.4cqw; }
+.slab[data-kind='pack'] .lab-set { font-size: 1.6cqw; }
+.slab[data-kind='pack'] .lab-bars { transform: scale(0.78); transform-origin: right center; }
+.slab[data-kind='pack'] .slab-seal { inset: 9.2cqw 0 auto; height: 1.8cqw; }
+.slab[data-kind='pack'] .slab-card { left: 5.5cqw; right: 5.5cqw; top: 13cqw; }
+
+.slab[data-kind='sleeve'] { aspect-ratio: 80 / 120; }
+.slab[data-kind='sleeve'] .slab-flap { height: 15cqw; }
+.slab[data-kind='sleeve'] .lab-tray { inset: 3.4cqw 3.6cqw auto; height: 9cqw; }
+.slab[data-kind='sleeve'] .lab { padding: 1.1cqw 1.7cqw; }
+.slab[data-kind='sleeve'] .lab-name { font-size: 3.6cqw; }
+.slab[data-kind='sleeve'] .lab-set { font-size: 1.7cqw; }
+.slab[data-kind='sleeve'] .slab-card { left: 4.5cqw; right: 4.5cqw; top: 17cqw; }
+
+/* Film reads soft only if the light on it is uneven enough to notice. */
+.slab[data-kind='sleeve'] .slab-crinkle,
+.slab[data-kind='pack'] .slab-crinkle { opacity: 0.72; }

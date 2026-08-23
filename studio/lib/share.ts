@@ -24,9 +24,8 @@ export interface ShareMeta {
   theme?: string;
   /** Card template, keyed to TEMPLATES. */
   layout?: string;
-  /** Case label stock and texture. */
-  tint?: string;
-  texture?: string;
+  /** What the card arrives in — slab, toploader, sleeve or pack. */
+  caseKind?: string;
   caption?: string;
   settings: Partial<CardSettings>;
   /** Image mime the frames were encoded as. */

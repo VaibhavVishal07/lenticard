@@ -9,14 +9,13 @@ import {
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LenticularCardHandle } from '../src/react/LenticularCard';
-import { Slider } from './components/Controls';
 import { Dock } from './components/Dock';
 import { frameFromDataUrl, Frames, framesFromFiles, type Frame } from './components/Frames';
 import { Greeting } from './components/Greeting';
 import { SendPanel } from './components/SendPanel';
 import { Tuner } from './components/Tuner';
 import { CardStack, type StackEntry } from './components/CardStack';
-import { CASE_TEXTURES, CASE_TINTS, Slab, type CaseTexture } from './components/Slab';
+import { CASE_KINDS, Slab, type CaseKind } from './components/Slab';
 import { TradingCard } from './components/TradingCard';
 import { buildDefaultCard } from './lib/default-card';
 import { INITIAL, type CardSettings } from './lib/presets';
@@ -28,7 +27,6 @@ import {
   DEFAULT_THEME,
   findTheme,
   TEMPLATES,
-  THEMES,
   type CardCopy,
   type CardLayout,
   type CardTheme,
@@ -78,10 +76,9 @@ export default function App() {
   const [cardTheme, setCardTheme] = useState<CardTheme>(DEFAULT_THEME);
   const [copy, setCopy] = useState<CardCopy>(() => copyFor(DEFAULT_THEME));
   const [layout, setLayout] = useState<CardLayout>(DEFAULT_TEMPLATE.id);
-  const [settings, setSettings] = useState<CardSettings>(INITIAL);
+  const [settings] = useState<CardSettings>(INITIAL);
 
-  const [caseTint, setCaseTint] = useState(CASE_TINTS[0].value);
-  const [caseTexture, setCaseTexture] = useState<CaseTexture>('clear');
+  const [caseKind, setCaseKind] = useState<CaseKind>('slab');
 
   const [stage, setStage] = useState<Stage>('home');
   const [step, setStep] = useState<Step>('photos');
@@ -165,14 +162,14 @@ export default function App() {
   const showcase = useMemo<StackEntry[]>(() => {
     const base = import.meta.env.BASE_URL;
     return [
-      { id: 's1', still: base + 'cards/astra-1.jpg', name: 'Astra Volt', set: 'STORMBORN', tint: '#2657b8', layout: 'fullart', themeId: 'congrats', real: true },
-      { id: 's2', still: base + 'cards/astra-2.jpg', name: 'Yours, Obviously', set: 'HEARTLAND', tint: '#d5352b', layout: 'rookie', themeId: 'valentine' },
-      { id: 's3', still: base + 'cards/astra-3.jpg', name: 'Called It', set: 'FIRST PRINT', tint: '#1b1d22', layout: 'chrome', themeId: 'congrats' },
-      { id: 's4', still: base + 'cards/astra-1.jpg', name: 'Thirty, Somehow', set: 'ANOTHER YEAR', tint: '#b8912f', layout: 'refractor', themeId: 'birthday' },
-      { id: 's5', still: base + 'cards/astra-2.jpg', name: 'Picks Up At 3am', set: 'LONG HAUL', tint: '#1c7a4f', layout: 'rookie', themeId: 'friend' },
-      { id: 's6', still: base + 'cards/astra-3.jpg', name: 'Second Slice', set: 'ANOTHER YEAR', tint: '#6b3fc4', layout: 'fullart', themeId: 'birthday' },
-      { id: 's7', still: base + 'cards/astra-1.jpg', name: 'Spare Keys', set: 'LONG HAUL', tint: '#1b1d22', layout: 'refractor', themeId: 'friend' },
-      { id: 's8', still: base + 'cards/astra-2.jpg', name: 'Took The Room', set: 'FIRST PRINT', tint: '#d5352b', layout: 'chrome', themeId: 'valentine' },
+      { id: 's1', still: base + 'cards/astra-1.jpg', name: 'Astra Volt', set: 'FULL BLEED', layout: 'fullart', kind: 'slab', real: true },
+      { id: 's2', still: base + 'cards/astra-2.jpg', name: 'Picks Up At 3am', set: 'ROOKIE', layout: 'rookie', kind: 'toploader' },
+      { id: 's3', still: base + 'cards/astra-3.jpg', name: 'Called It', set: 'CHROME', layout: 'chrome', kind: 'pack' },
+      { id: 's4', still: base + 'cards/astra-1.jpg', name: 'Thirty, Somehow', set: 'REFRACTOR', layout: 'refractor', kind: 'sleeve' },
+      { id: 's5', still: base + 'cards/astra-2.jpg', name: 'Spare Keys', set: 'ROOKIE', layout: 'rookie', kind: 'slab' },
+      { id: 's6', still: base + 'cards/astra-3.jpg', name: 'Second Slice', set: 'FULL BLEED', layout: 'fullart', kind: 'pack' },
+      { id: 's7', still: base + 'cards/astra-1.jpg', name: 'Took The Room', set: 'REFRACTOR', layout: 'refractor', kind: 'toploader' },
+      { id: 's8', still: base + 'cards/astra-2.jpg', name: 'Yours, Obviously', set: 'CHROME', layout: 'chrome', kind: 'sleeve' },
     ];
   }, []);
   const ready = photos.length > 0 && !checking && held;
@@ -215,9 +212,13 @@ export default function App() {
     }, 250);
   }, []);
 
-  const pickTheme = useCallback((next: CardTheme) => {
-    setCardTheme(next);
-    setCopy(copyFor(next));
+  /**
+   * The template carries the palette. Words are never rewritten by it — that
+   * was the old occasion behaviour, and it threw away whatever you had typed.
+   */
+  const pickLayout = useCallback((next: CardLayout) => {
+    setLayout(next);
+    setCardTheme(findTheme(next));
   }, []);
 
   if (received) {
@@ -245,21 +246,20 @@ export default function App() {
           <div className="stage-stack">
             <CardStack
               entries={showcase}
-              onAngle={onAngle}
               render={(entry, isLive) => {
-                const entryTheme = findTheme(entry.themeId);
+                const entryTheme = findTheme(entry.layout);
                 return (
                   <TradingCard
-                    ref={isLive ? cardRef : undefined}
                     photos={images}
                     still={isLive ? undefined : entry.still}
                     theme={entryTheme}
-                    copy={copyFor(entryTheme)}
+                    copy={{ ...copyFor(entryTheme), title: entry.name }}
                     layout={entry.layout}
                     lenticules={settings.lenticules}
                     parallax={settings.parallax}
                     blend={settings.blend}
                     sheen={settings.sheen}
+                    drive="pointer"
                   />
                 );
               }}
@@ -291,10 +291,9 @@ export default function App() {
           <Slab
             encased
             label={copy.title}
-            sublabel={`${cardTheme.label.toUpperCase()} · LENTICARD`}
+            sublabel={`${cardTheme.set} · LENTICARD`}
             serial={serial}
-            tint={caseTint}
-            texture={caseTexture}
+            kind={caseKind}
             onAngle={onAngle}
           >
             <TradingCard
@@ -391,70 +390,29 @@ export default function App() {
                   <section className="step-body">
                     <div className="step-head">
                       <h2>Design</h2>
-                      <p>The template sets the frame. The occasion sets the words.</p>
+                      <p>The template is the card. The case is what it arrives in.</p>
                     </div>
-
                     <div className="field">
                       <span className="field-label">Template</span>
-                      <TemplateStrip value={layout} onPick={setLayout} />
-                    </div>
-
-                    <div className="field">
-                      <span className="field-label">Occasion</span>
-                      <div className="choices">
-                        {THEMES.map((t) => (
-                          <button
-                            key={t.id}
-                            className="choice"
-                            aria-pressed={t.id === cardTheme.id}
-                            onClick={() => pickTheme(t)}
-                          >
-                            {t.label}
-                          </button>
-                        ))}
-                      </div>
+                      <TemplateStrip value={layout} onPick={pickLayout} />
                     </div>
 
                     <div className="field">
                       <span className="field-label">Case</span>
-                      <div className="swatches">
-                        {CASE_TINTS.map((t) => (
-                          <button
-                            key={t.id}
-                            className="swatch"
-                            style={{ ['--sw' as string]: t.value }}
-                            aria-label={t.label}
-                            aria-pressed={t.value === caseTint}
-                            onClick={() => setCaseTint(t.value)}
-                          />
-                        ))}
-                      </div>
                       <div className="choices">
-                        {CASE_TEXTURES.map((t) => (
+                        {CASE_KINDS.map((k) => (
                           <button
-                            key={t.id}
+                            key={k.id}
                             className="choice"
-                            aria-pressed={t.id === caseTexture}
-                            onClick={() => setCaseTexture(t.id)}
+                            title={k.hint}
+                            aria-pressed={k.id === caseKind}
+                            onClick={() => setCaseKind(k.id)}
                           >
-                            {t.label}
+                            {k.label}
                           </button>
                         ))}
                       </div>
                     </div>
-
-                    <details className="more">
-                      <summary>Lens settings</summary>
-                      <Slider
-                        label="Shift"
-                        value={settings.parallax}
-                        min={0.4}
-                        max={2}
-                        step={0.01}
-                        decimals={2}
-                        onChange={(parallax) => setSettings((s) => ({ ...s, parallax }))}
-                      />
-                    </details>
                   </section>
                 )}
 
@@ -568,8 +526,7 @@ export default function App() {
                   title={copy.title}
                   themeId={cardTheme.id}
                   layout={layout}
-                  tint={caseTint}
-                  texture={caseTexture}
+                  caseKind={caseKind}
                   replyTo={replyTo}
                   onError={notify}
                 />

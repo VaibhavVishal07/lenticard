@@ -13,13 +13,14 @@ export type CardSettings = Pick<
  * picture the way they are on a printed sheet. Coarse ridges keep the weave
  * visible at arm's length, and a low blend keeps each strip a clean cut.
  *
- * Ridges stay high. A coarse interlace reads as a printing fault rather than a
- * lens, so this is not something worth letting anyone dial down.
+ * Ridges stay high and the shift stays at its maximum. A coarse interlace
+ * reads as a printing fault rather than a lens, and a timid shift reads as a
+ * blurry photograph, so neither is worth letting anyone dial down.
  */
 export const INITIAL: CardSettings = {
   orientation: 'auto',
   lenticules: 160,
-  parallax: 1.15,
+  parallax: 2,
   blend: 0.14,
   sheen: 0.62,
   motion: 'pointer',
@@ -42,5 +43,7 @@ export const FIXED = {
   float: 9,
   radius: 20,
   idleSweep: 2200,
-  fit: 'cover',
+  // Nothing is cropped. A photograph handed over is the photograph, not a
+  // centre crop of it that happens to suit a 63x88 frame.
+  fit: 'contain',
 } as const;

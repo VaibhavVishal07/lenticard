@@ -65,8 +65,7 @@ export function Greeting({ payload, onMakeOne }: GreetingProps) {
             label={meta.caption || (from ? `From ${from}` : 'A card for you')}
             sublabel={from ? `Sent by ${from}` : occasion.label}
             serial={`LC-${String(frames.length * 137).padStart(7, '0')}`}
-            tint={meta.tint}
-            texture={meta.texture as never}
+            kind={(meta.caseKind as never) ?? 'slab'}
             onAngle={(x, y) => cardRef.current?.setAngle(x, y)}
           >
             <TradingCard
