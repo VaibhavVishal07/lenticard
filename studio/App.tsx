@@ -91,6 +91,9 @@ export default function App() {
   const [note, setNote] = useState<string | null>(null);
   const [own, setOwn] = useState(false);
   const [held, setHeld] = useState(false);
+  /** The L1 → L2 pull: the column recedes, then one case rises out of the box. */
+  const [leaving, setLeaving] = useState(false);
+  const [pulling, setPulling] = useState(false);
   const cardRef = useRef<LenticularCardHandle>(null);
 
   useEffect(() => {
@@ -177,6 +180,24 @@ export default function App() {
     [own, notify],
   );
 
+  /**
+   * Entering the maker.
+   *
+   * Two beats rather than a cut: the column and the pitch drop back, and only
+   * then does a single case rise out of the box the column was sitting in.
+   * Swapping the stage on the click made the whole page blink.
+   */
+  const openMaker = useCallback(() => {
+    // Sealed on the way out of the box; the glass lifts once it has landed.
+    setEncased(true);
+    setLeaving(true);
+    setPulling(true);
+    window.setTimeout(() => {
+      setLeaving(false);
+      setStage('make');
+    }, 250);
+  }, []);
+
   const pickTheme = useCallback((next: CardTheme) => {
     setCardTheme(next);
     setCopy(copyFor(next));
@@ -199,7 +220,7 @@ export default function App() {
 
   return (
     <>
-      <main className="stage" data-stage={stage}>
+      <main className="stage" data-stage={stage} data-leaving={leaving}>
         {/* One card, mounted once, for every stage. Re-parenting it between
             layouts tore down the WebGL context and rebuilt it, which is what
             produced the jolt on entering the maker. It lives here now and the
@@ -228,6 +249,28 @@ export default function App() {
 
         {stage !== 'home' && (
         <div className="stage-case">
+          {/* The box the case comes out of. It sits in front of the lower half
+              of the slab, so the slab reads as rising from inside it, then
+              drops away. Only ever shown on the way in from the home page. */}
+          {pulling && (
+            <motion.span
+              className="case-box"
+              aria-hidden
+              initial={{ y: 0, opacity: 1 }}
+              animate={{ y: '52%', opacity: 0 }}
+              transition={{ delay: 0.3, duration: 0.52, ease: EASE }}
+              onAnimationComplete={() => {
+                setPulling(false);
+                setEncased(false);
+              }}
+            />
+          )}
+          <motion.div
+            className="case-lift"
+            initial={pulling ? { y: '34%', scale: 0.82, rotateX: 22, opacity: 0 } : false}
+            animate={{ y: 0, scale: 1, rotateX: 0, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 116, damping: 19, mass: 0.9 }}
+          >
           <Slab
             encased={encased}
             label={copy.title}
@@ -250,6 +293,7 @@ export default function App() {
               onError={(error) => notify(error.message)}
             />
           </Slab>
+          </motion.div>
         </div>
         )}
 
@@ -276,10 +320,7 @@ export default function App() {
 
                 <button
                   className="btn btn-holo btn-xl"
-                  onClick={() => {
-                    setEncased(false);
-                    setStage('make');
-                  }}
+                  onClick={openMaker}
                 >
                   Make yours
                   <span className="btn-well">
