@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from 'motion/react';
-import type { ReactNode } from 'react';
+import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 
 const EASE = [0.32, 0.72, 0, 1] as const;
 
@@ -23,28 +23,27 @@ export const CASE_TINTS = [
 ];
 
 interface SlabProps {
-  /** True while the card is sealed in the case. */
   encased: boolean;
-  /** Printed large on the label. */
   label?: string;
-  /** Printed small, under the label. */
   sublabel?: string;
-  /** Serial along the foot. */
   serial?: string;
-  /** Label stock colour. */
   tint?: string;
   texture?: CaseTexture;
   grade?: string;
+  /** Viewing angle, -1..1 on each axis. The caller feeds this to the card. */
+  onAngle?: (x: number, y: number) => void;
   children: ReactNode;
 }
 
 /**
- * The acrylic case a graded card ships in.
+ * The case, as an actual object.
  *
- * It exists for the moment it ends: sliding the card out is what makes the card
- * feel like an object worth having. So the shell is a sibling of the card
- * rather than its parent — the card never unmounts, never loses its WebGL
- * context, and simply rises out of a case that falls away behind it.
+ * Depth is the whole point, so it is built as separated layers in 3D rather
+ * than a panel with a gradient on it: a dark backing plate, the shell and its
+ * printed label, the card, and the front sheet of acrylic — each at its own Z.
+ * Rotating the assembly slides those layers against each other, and that
+ * parallax is what reads as thickness. Nothing rotates on its own; the whole
+ * thing turns together, the way a slab does when you tilt it in your hand.
  */
 export function Slab({
   encased,
@@ -54,53 +53,107 @@ export function Slab({
   tint = '#e9eae4',
   texture = 'clear',
   grade = '10',
+  onAngle,
   children,
 }: SlabProps) {
+  const rig = useRef<HTMLDivElement>(null);
+  const px = useMotionValue(0);
+  const py = useMotionValue(0);
+
+  const spring = { stiffness: 140, damping: 20, mass: 0.6 };
+  const rotateY = useSpring(useTransform(px, [-1, 1], [-17, 17]), spring);
+  const rotateX = useSpring(useTransform(py, [-1, 1], [13, -13]), spring);
+  const shine = useTransform(px, [-1, 1], ['18%', '82%']);
+  const lift = useSpring(useTransform(py, [-1, 1], [10, -10]), spring);
+
+  const track = useCallback(
+    (event: PointerEvent) => {
+      const node = rig.current;
+      if (!node) return;
+      const rect = node.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+      // Beyond the case the angle keeps reading, just gently, so the card is
+      // alive whenever the pointer is anywhere near it.
+      const clamp = (v: number) => Math.max(-1.4, Math.min(1.4, v));
+      px.set(clamp(x));
+      py.set(clamp(y));
+      onAngle?.(Math.max(-1, Math.min(1, x)), Math.max(-1, Math.min(1, y)));
+    },
+    [px, py, onAngle],
+  );
+
+  useEffect(() => {
+    const reset = () => {
+      px.set(0);
+      py.set(0);
+      onAngle?.(0, 0);
+    };
+    window.addEventListener('pointermove', track, { passive: true });
+    document.addEventListener('pointerleave', reset);
+    return () => {
+      window.removeEventListener('pointermove', track);
+      document.removeEventListener('pointerleave', reset);
+    };
+  }, [track, px, py, onAngle]);
+
   return (
-    <div className="encase" data-encased={encased}>
-      <AnimatePresence>
-        {encased && (
-          <motion.div
-            className="slab"
-            data-texture={texture}
-            style={{ ['--tint' as string]: tint }}
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.94, y: 28, filter: 'blur(6px)' }}
-            transition={{ duration: 0.62, ease: EASE }}
-            aria-hidden
-          >
-            <div className="slab-label">
-              <div className="slab-id">
-                <span className="slab-brand">
-                  <span className="slab-chip" />
-                  LENTICARD
-                </span>
-                <span className="slab-title">{label}</span>
-                {sublabel && <span className="slab-sub">{sublabel}</span>}
-              </div>
-              <div className="slab-grade">
-                <span className="slab-grade-w">GEM MINT</span>
-                <span className="slab-grade-n">{grade}</span>
-              </div>
-            </div>
-
-            <div className="slab-well" />
-            {serial && <div className="slab-serial">{serial}</div>}
-            <div className="slab-gloss" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+    <div className="rig" ref={rig}>
       <motion.div
-        className="encase-card"
-        animate={encased ? { y: 0, scale: 1 } : { y: [0, -20, 0], scale: 1.1 }}
-        transition={{
-          y: { duration: 0.78, ease: EASE },
-          scale: { duration: 0.62, ease: EASE },
-        }}
+        className="slab3d"
+        data-encased={encased}
+        data-texture={texture}
+        style={{ rotateX, rotateY, y: lift, ['--tint' as string]: tint }}
       >
-        {children}
+        {/* Backing plate, furthest from the eye. */}
+        <div className="slab-back" />
+
+        {/* The shell and its printed label. */}
+        <div className="slab-body">
+          <div className="slab-label">
+            <div className="slab-id">
+              <span className="slab-brand">
+                <span className="slab-chip" />
+                LENTICARD
+              </span>
+              <span className="slab-title">{label}</span>
+              {sublabel && <span className="slab-sub">{sublabel}</span>}
+            </div>
+            <div className="slab-grade">
+              <span className="slab-grade-w">GEM MINT</span>
+              <span className="slab-grade-n">{grade}</span>
+            </div>
+          </div>
+          <div className="slab-well" />
+          {serial && <div className="slab-serial">{serial}</div>}
+        </div>
+
+        {/* The card, floating inside the acrylic. */}
+        <motion.div
+          className="slab-card"
+          animate={
+            encased
+              ? { y: '0%', scale: 1, z: 10, rotateZ: 0, opacity: 1 }
+              : { y: ['0%', '-62%', '-6%'], scale: [1, 1.06, 1.22], z: 90, rotateZ: [0, -3.5, 0] }
+          }
+          transition={{
+            duration: encased ? 0.7 : 1.05,
+            times: encased ? undefined : [0, 0.55, 1],
+            ease: EASE,
+          }}
+        >
+          {children}
+        </motion.div>
+
+        {/* Front sheet of acrylic: the only layer that carries a hard specular. */}
+        <motion.div className="slab-glass" style={{ ['--shine' as string]: shine }} />
+
+        {/* The four cut edges, which is what actually says "thick". */}
+        <span className="slab-edge slab-edge-t" />
+        <span className="slab-edge slab-edge-b" />
+        <span className="slab-edge slab-edge-l" />
+        <span className="slab-edge slab-edge-r" />
       </motion.div>
     </div>
   );

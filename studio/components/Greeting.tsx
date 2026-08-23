@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowUpRight, DeviceMobileCamera } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { LenticularCard, type LenticularCardHandle } from '../../src/react/LenticularCard';
+import type { LenticularCardHandle } from '../../src/react/LenticularCard';
+import { TradingCard } from './TradingCard';
+import { copyFor, findTheme } from '../lib/themes';
 import { findOccasion, teaseFor } from '../lib/occasions';
 import { framesToUrls, type SharePayload } from '../lib/share';
 import { Slab } from './Slab';
@@ -25,6 +27,10 @@ export function Greeting({ payload, onMakeOne }: GreetingProps) {
   const cardRef = useRef<LenticularCardHandle>(null);
   const { meta } = payload;
   const occasion = findOccasion(meta.occasion);
+  // The printing is not baked into the frames, so it is rebuilt from the theme
+  // the sender chose and whatever they retitled it to.
+  const cardTheme = findTheme(meta.theme);
+  const cardCopy = { ...copyFor(cardTheme), title: meta.caption || copyFor(cardTheme).title };
 
   // Object URLs are owned here and revoked when the greeting goes away.
   const frames = useMemo(() => framesToUrls(payload.frames), [payload.frames]);
@@ -56,15 +62,23 @@ export function Greeting({ payload, onMakeOne }: GreetingProps) {
         >
           <Slab
             encased={!opened}
-            label={from ? `Sent by ${from}` : 'A card for you'}
-            serial={occasion.label.toUpperCase()}
+            label={meta.caption || (from ? `From ${from}` : 'A card for you')}
+            sublabel={from ? `Sent by ${from}` : occasion.label}
+            serial={`LC-${String(frames.length * 137).padStart(7, '0')}`}
+            tint={meta.tint}
+            texture={meta.texture as never}
+            onAngle={(x, y) => cardRef.current?.setAngle(x, y)}
           >
-            <LenticularCard
+            <TradingCard
               ref={cardRef}
-              images={frames}
-              axis="vertical"
-              caption={opened ? meta.caption || undefined : undefined}
-              {...meta.settings}
+              photos={frames}
+              theme={cardTheme}
+              copy={cardCopy}
+              layout="trading"
+              lenticules={meta.settings.lenticules ?? 62}
+              parallax={meta.settings.parallax ?? 1.15}
+              blend={meta.settings.blend ?? 0.14}
+              sheen={meta.settings.sheen ?? 0.62}
             />
           </Slab>
         </motion.div>

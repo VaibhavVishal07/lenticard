@@ -20,6 +20,11 @@ export interface ShareMeta {
   note?: string;
   /** Which occasion wrapped it, keyed to OCCASIONS. */
   occasion?: string;
+  /** Card theme, keyed to THEMES — the printing is rebuilt from it. */
+  theme?: string;
+  /** Case label stock and texture. */
+  tint?: string;
+  texture?: string;
   caption?: string;
   settings: Partial<CardSettings>;
   /** Image mime the frames were encoded as. */

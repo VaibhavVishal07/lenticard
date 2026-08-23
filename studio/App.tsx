@@ -1,20 +1,20 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowLeft, ArrowUpRight, PaperPlaneTilt, Plus } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LenticularCard, type LenticularCardHandle } from '../src/react/LenticularCard';
+import type { LenticularCardHandle } from '../src/react/LenticularCard';
 import { Slider } from './components/Controls';
 import { Dock } from './components/Dock';
 import { frameFromDataUrl, Frames, framesFromFiles, type Frame } from './components/Frames';
 import { GiftDialog } from './components/GiftDialog';
 import { Greeting } from './components/Greeting';
 import { CASE_TEXTURES, CASE_TINTS, Slab, type CaseTexture } from './components/Slab';
+import { TradingCard } from './components/TradingCard';
 import { buildDefaultCard } from './lib/default-card';
-import { FIXED, INITIAL, type CardSettings } from './lib/presets';
+import { INITIAL, type CardSettings } from './lib/presets';
 import { decodePayload, type SharePayload } from './lib/share';
 import { clearLocation, hasCardInLocation, loadFromLocation } from './lib/stores';
 import { useTheme } from './lib/theme';
 import {
-  composeCard,
   copyFor,
   DEFAULT_THEME,
   LAYOUTS,
@@ -31,16 +31,12 @@ type Stage = 'home' | 'make';
 export default function App() {
   const { theme, setTheme } = useTheme();
 
-  // Photos are what the user brings; frames are the finished trading cards
-  // composed around them. The card renders the frames, the list shows the photos.
   const [photos, setPhotos] = useState<Frame[]>([]);
-  const [frames, setFrames] = useState<string[]>([]);
   const [cardTheme, setCardTheme] = useState<CardTheme>(DEFAULT_THEME);
   const [copy, setCopy] = useState<CardCopy>(() => copyFor(DEFAULT_THEME));
   const [layout, setLayout] = useState<CardLayout>('trading');
   const [settings, setSettings] = useState<CardSettings>(INITIAL);
 
-  // The case is part of the gift, so it is part of what you design.
   const [caseTint, setCaseTint] = useState(CASE_TINTS[1].value);
   const [caseTexture, setCaseTexture] = useState<CaseTexture>('clear');
   const [caseLabel, setCaseLabel] = useState('');
@@ -57,27 +53,8 @@ export default function App() {
   const cardRef = useRef<LenticularCardHandle>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setHeld(true), 1600);
+    const timer = window.setTimeout(() => setHeld(true), 1500);
     return () => window.clearTimeout(timer);
-  }, []);
-
-  // The room takes its colour from wherever the card is being looked at.
-  // Written straight to the root: no React re-render, and the browser
-  // composites the wash on its own.
-  useEffect(() => {
-    const root = document.documentElement;
-    const onMove = (event: PointerEvent) => {
-      root.style.setProperty('--px', ((event.clientX / window.innerWidth) * 2 - 1).toFixed(3));
-      root.style.setProperty('--py', ((event.clientY / window.innerHeight) * 2 - 1).toFixed(3));
-      root.style.setProperty('--wash-on', '1');
-    };
-    const onLeave = () => root.style.setProperty('--wash-on', '0');
-    window.addEventListener('pointermove', onMove, { passive: true });
-    document.addEventListener('pointerleave', onLeave);
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerleave', onLeave);
-    };
   }, []);
 
   const notify = useCallback((message: string) => {
@@ -85,7 +62,6 @@ export default function App() {
     window.setTimeout(() => setNote(null), 3200);
   }, []);
 
-  // A card in the URL means this visit is a delivery, not a session.
   useEffect(() => {
     if (!hasCardInLocation()) return;
     let cancelled = false;
@@ -119,34 +95,25 @@ export default function App() {
     };
   }, []);
 
-  // Re-compose whenever the art or the printing changes — never on a lens dial,
-  // which would redraw three full cards for a slider tick.
-  useEffect(() => {
-    if (!photos.length) return;
-    let cancelled = false;
-    const timer = window.setTimeout(() => {
-      void composeCard(photos.map((p) => p.url), cardTheme, copy, layout)
-        .then((next) => !cancelled && setFrames(next))
-        .catch((error) => !cancelled && notify((error as Error).message));
-    }, 140);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [photos, cardTheme, copy, layout, notify]);
+  const images = useMemo(() => photos.map((p) => p.url), [photos]);
+  const ready = photos.length > 0 && !checking && held;
 
-  const ready = frames.length > 0 && !checking && held;
-
+  /** Printed on the case. Stable for a given set of photos. */
   const serial = useMemo(() => {
     const seed = photos.reduce((acc, p) => acc + p.width * 31 + p.height * 17, photos.length);
-    return `LC-${String(seed % 100000).padStart(5, '0')}`;
+    return `LC-${String(seed % 10000000).padStart(7, '0')}`;
   }, [photos]);
+
+  // One pointer source drives the whole assembly: the case turns, and the same
+  // angle picks which frame the lens shows. Nothing moves on its own.
+  const onAngle = useCallback((x: number, y: number) => {
+    cardRef.current?.setAngle(x, y);
+  }, []);
 
   const addFiles = useCallback(
     async (files: File[]) => {
       try {
         const added = await framesFromFiles(files);
-        // The first upload replaces the stand-in photos rather than joining them.
         setPhotos((current) => (own ? [...current, ...added] : added));
         setOwn(true);
       } catch (error) {
@@ -158,21 +125,33 @@ export default function App() {
 
   const pickTheme = useCallback((next: CardTheme) => {
     setCardTheme(next);
-    // Switching theme rewrites the printing too — that is the point of a theme.
     setCopy(copyFor(next));
   }, []);
 
-  /** Slide the card out of its case, then open the maker behind it. */
   const lift = useCallback(() => {
     setEncased(false);
-    window.setTimeout(() => setStage('make'), 380);
+    window.setTimeout(() => setStage('make'), 520);
   }, []);
 
-  /** Put it back in the case, then hand it over. */
   const seal = useCallback(() => {
     setEncased(true);
-    window.setTimeout(() => setGiftOpen(true), 640);
+    window.setTimeout(() => setGiftOpen(true), 760);
   }, []);
+
+  const card = (
+    <TradingCard
+      ref={cardRef}
+      photos={images}
+      theme={cardTheme}
+      copy={copy}
+      layout={layout}
+      lenticules={settings.lenticules}
+      parallax={settings.parallax}
+      blend={settings.blend}
+      sheen={settings.sheen}
+      onError={(error) => notify(error.message)}
+    />
+  );
 
   if (received) {
     return (
@@ -191,94 +170,94 @@ export default function App() {
 
   return (
     <>
-      <div className="wash" aria-hidden />
+      <div className="wash" aria-hidden>
+        <span className="wash-a" />
+        <span className="wash-b" />
+      </div>
 
-      <main className="stage">
-        <motion.div
-          className="card-slot"
-          initial={{ opacity: 0, y: 34, scale: 0.96 }}
-          animate={{ opacity: frames.length ? 1 : 0, y: 0, scale: 1 }}
-          transition={{ duration: 1, ease: EASE }}
-        >
-          <Slab
-            encased={encased}
-            label={caseLabel || copy.title}
-            sublabel={`${cardTheme.label} · ${photos.length}-frame lenticular`}
-            serial={serial}
-            tint={caseTint}
-            texture={caseTexture}
-          >
-            <LenticularCard
-              ref={cardRef}
-              images={frames}
-              axis="vertical"
-              orientation={settings.orientation}
-              lenticules={settings.lenticules}
-              parallax={settings.parallax}
-              blend={settings.blend}
-              sheen={settings.sheen}
-              motion={ready ? settings.motion : 'auto'}
-              {...FIXED}
-              onError={(error) => notify(error.message)}
-            />
-          </Slab>
-        </motion.div>
-
-        <AnimatePresence mode="wait">
-          {!ready ? (
-            <motion.div key="loading" className="loading" exit={{ opacity: 0 }}>
-              <span className="mark mark-lg">
-                <span className="mark-chip" aria-hidden />
-                lenticard
-              </span>
-              <span className="loading-bar" aria-hidden>
-                <span />
-              </span>
-            </motion.div>
-          ) : stage === 'home' ? (
+      <main className="stage" data-stage={stage}>
+        {stage === 'home' ? (
+          <div className="home">
             <motion.div
-              key="home"
-              className="copy"
-              initial={{ opacity: 0, y: 22 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.7, ease: EASE }}
+              className="home-copy"
+              initial={{ opacity: 0, y: 26 }}
+              animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 26 }}
+              transition={{ duration: 0.8, ease: EASE }}
             >
+              <p className="kicker">
+                <span className="kicker-dot" aria-hidden />
+                Graded, slabbed, one of one
+              </p>
               <h1>
-                Make your own <em>holographic</em> trading card
+                Make your own
+                <br />
+                <em>holographic</em>
+                <br />
+                trading card
               </h1>
-              <p>
-                Your photos, graded and slabbed. Send the whole case to a friend.
+              <p className="lede">
+                Three of your photos, printed as one card that changes when it moves.
+                Sealed in a case with your name on the label, and sent to whoever
+                should have it.
               </p>
 
-              {/* Sampler: the fastest way to understand the product is to see
-                  the same card printed four different ways. */}
-              <div className="sampler" role="group" aria-label="Card type">
+              <div className="picker" role="group" aria-label="Card type">
                 {THEMES.map((item) => (
                   <button
                     key={item.id}
-                    className="sample"
+                    className="pick"
                     aria-pressed={item.id === cardTheme.id}
-                    style={{ ['--sample' as string]: item.accent }}
+                    style={{ ['--pick' as string]: item.accent }}
                     onClick={() => pickTheme(item)}
                   >
-                    <span className="sample-glyph" aria-hidden>{item.glyph}</span>
-                    {item.label}
+                    <span className="pick-glyph" aria-hidden>{item.glyph}</span>
+                    <span className="pick-body">
+                      <span className="pick-label">{item.label}</span>
+                      <span className="pick-badge">{item.badge}</span>
+                    </span>
                   </button>
                 ))}
               </div>
             </motion.div>
-          ) : (
+
             <motion.div
-              key="make"
-              className="maker"
-              initial={{ opacity: 0, y: 22 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.7, ease: EASE }}
+              className="home-case"
+              initial={{ opacity: 0, y: 40, scale: 0.94 }}
+              animate={{ opacity: photos.length ? 1 : 0, y: 0, scale: 1 }}
+              transition={{ duration: 1, ease: EASE }}
             >
-              <div className="field">
-                <span className="field-label">Card style</span>
+              <Slab
+                encased={encased}
+                label={caseLabel || copy.title}
+                sublabel={`${cardTheme.label} · ${photos.length}-frame lenticular`}
+                serial={serial}
+                tint={caseTint}
+                texture={caseTexture}
+                onAngle={onAngle}
+              >
+                {card}
+              </Slab>
+            </motion.div>
+          </div>
+        ) : (
+          <div className="make">
+            <div className="make-card">
+              <Slab
+                encased={encased}
+                label={caseLabel || copy.title}
+                sublabel={`${cardTheme.label} · ${photos.length}-frame lenticular`}
+                serial={serial}
+                tint={caseTint}
+                texture={caseTexture}
+                onAngle={onAngle}
+              >
+                {card}
+              </Slab>
+            </div>
+
+            <div className="make-panel">
+              <section className="panel-block">
+                <h2>Style</h2>
                 <div className="choices">
                   {LAYOUTS.map((item) => (
                     <button
@@ -292,10 +271,6 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              <div className="field">
-                <span className="field-label">Occasion</span>
                 <div className="choices">
                   {THEMES.map((item) => (
                     <button
@@ -308,85 +283,129 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <Frames
-                frames={photos}
-                onChange={setPhotos}
-                onAdd={(files) => void addFiles(files)}
-                onError={notify}
-              />
-
-              <div className="field">
-                <label className="field-label" htmlFor="title">Card name</label>
-                <input
-                  id="title"
-                  className="text-input"
-                  value={copy.title}
-                  maxLength={26}
-                  onChange={(e) => setCopy((c) => ({ ...c, title: e.target.value }))}
+              <section className="panel-block">
+                <h2>Photos</h2>
+                <Frames
+                  frames={photos}
+                  onChange={setPhotos}
+                  onAdd={(files) => void addFiles(files)}
+                  onError={notify}
                 />
-              </div>
+              </section>
 
-              <div className="attr-grid">
-                {copy.attributes.map((attr, i) => (
-                  <div className="field" key={i}>
-                    <span className="field-label">Attribute {i + 1}</span>
+              <section className="panel-block">
+                <h2>Printing</h2>
+                <div className="field">
+                  <label className="field-label" htmlFor="title">Name</label>
+                  <input
+                    id="title"
+                    className="text-input"
+                    value={copy.title}
+                    maxLength={24}
+                    onChange={(e) => setCopy((c) => ({ ...c, title: e.target.value }))}
+                  />
+                </div>
+                <div className="two-up">
+                  <div className="field">
+                    <label className="field-label" htmlFor="stage-line">Stage line</label>
                     <input
+                      id="stage-line"
                       className="text-input"
-                      value={attr.label}
-                      maxLength={18}
-                      aria-label={`Attribute ${i + 1} name`}
-                      onChange={(e) =>
-                        setCopy((c) => {
-                          const next = [...c.attributes] as CardCopy['attributes'];
-                          next[i] = { ...next[i], label: e.target.value };
-                          return { ...c, attributes: next };
-                        })
-                      }
+                      value={copy.stage}
+                      maxLength={40}
+                      onChange={(e) => setCopy((c) => ({ ...c, stage: e.target.value }))}
                     />
+                  </div>
+                  <div className="field">
+                    <label className="field-label" htmlFor="stat">{copy.statLabel}</label>
+                    <input
+                      id="stat"
+                      className="text-input"
+                      value={copy.statValue}
+                      maxLength={5}
+                      onChange={(e) => setCopy((c) => ({ ...c, statValue: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {copy.moves.map((move, i) => (
+                  <div className="move-edit" key={i}>
+                    <div className="two-up">
+                      <div className="field">
+                        <label className="field-label">Move {i + 1}</label>
+                        <input
+                          className="text-input"
+                          value={move.name}
+                          maxLength={22}
+                          aria-label={`Move ${i + 1} name`}
+                          onChange={(e) =>
+                            setCopy((c) => {
+                              const moves = [...c.moves] as CardCopy['moves'];
+                              moves[i] = { ...moves[i], name: e.target.value };
+                              return { ...c, moves };
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="field">
+                        <label className="field-label">Value</label>
+                        <input
+                          className="text-input"
+                          value={move.value}
+                          maxLength={4}
+                          aria-label={`Move ${i + 1} value`}
+                          onChange={(e) =>
+                            setCopy((c) => {
+                              const moves = [...c.moves] as CardCopy['moves'];
+                              moves[i] = { ...moves[i], value: e.target.value };
+                              return { ...c, moves };
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
                     <input
                       className="text-input"
-                      value={attr.value}
-                      maxLength={12}
-                      aria-label={`Attribute ${i + 1} value`}
+                      value={move.text}
+                      maxLength={64}
+                      aria-label={`Move ${i + 1} text`}
                       onChange={(e) =>
                         setCopy((c) => {
-                          const next = [...c.attributes] as CardCopy['attributes'];
-                          next[i] = { ...next[i], value: e.target.value };
-                          return { ...c, attributes: next };
+                          const moves = [...c.moves] as CardCopy['moves'];
+                          moves[i] = { ...moves[i], text: e.target.value };
+                          return { ...c, moves };
                         })
                       }
                     />
                   </div>
                 ))}
-              </div>
 
-              <div className="field">
-                <label className="field-label" htmlFor="flavour">Flavour line</label>
-                <textarea
-                  id="flavour"
-                  className="text-input"
-                  rows={2}
-                  maxLength={110}
-                  value={copy.flavour}
-                  onChange={(e) => setCopy((c) => ({ ...c, flavour: e.target.value }))}
-                />
-              </div>
+                <div className="field">
+                  <label className="field-label" htmlFor="flavour">Flavour line</label>
+                  <textarea
+                    id="flavour"
+                    className="text-input"
+                    rows={2}
+                    maxLength={110}
+                    value={copy.flavour}
+                    onChange={(e) => setCopy((c) => ({ ...c, flavour: e.target.value }))}
+                  />
+                </div>
+              </section>
 
-              <div className="case-panel">
-                <span className="field-label">The case</span>
-
+              <section className="panel-block">
+                <h2>The case</h2>
                 <input
                   className="text-input"
                   value={caseLabel}
-                  maxLength={28}
+                  maxLength={26}
                   placeholder={copy.title}
                   aria-label="Text printed on the case"
                   onChange={(e) => setCaseLabel(e.target.value)}
                 />
-
-                <div className="swatches" role="group" aria-label="Case colour">
+                <div className="swatches" role="group" aria-label="Label stock">
                   {CASE_TINTS.map((t) => (
                     <button
                       key={t.id}
@@ -398,7 +417,6 @@ export default function App() {
                     />
                   ))}
                 </div>
-
                 <div className="choices">
                   {CASE_TEXTURES.map((t) => (
                     <button
@@ -411,9 +429,10 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <div className="dials">
+              <section className="panel-block">
+                <h2>The lens</h2>
                 <Slider
                   label="Ridges"
                   value={settings.lenticules}
@@ -439,10 +458,20 @@ export default function App() {
                   decimals={2}
                   onChange={(sheen) => setSettings((s) => ({ ...s, sheen }))}
                 />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </section>
+            </div>
+          </div>
+        )}
+
+        {!ready && (
+          <div className="loading">
+            <span className="mark mark-lg">
+              <span className="mark-chip" aria-hidden />
+              lenticard
+            </span>
+            <span className="loading-bar" aria-hidden><span /></span>
+          </div>
+        )}
       </main>
 
       {ready && (
@@ -466,7 +495,7 @@ export default function App() {
               </button>
               <button className="btn btn-holo" onClick={seal} disabled={photos.length < 2}>
                 <PaperPlaneTilt size={15} weight="bold" />
-                Send the case
+                Seal and send
                 <span className="btn-well">
                   <ArrowUpRight size={12} weight="bold" />
                 </span>
@@ -478,7 +507,7 @@ export default function App() {
 
       <GiftDialog
         open={giftOpen}
-        images={frames}
+        images={images}
         settings={settings}
         caption={copy.title}
         replyTo={replyTo}

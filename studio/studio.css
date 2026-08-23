@@ -79,42 +79,32 @@
 
 * { box-sizing: border-box; }
 
-/* The room picks up a trace of what the card is doing. Two washes, cyan and
-   magenta, drift against each other as the pointer moves — barely there, but
-   enough that the page feels lit by the object rather than behind it. */
+/* The room picks up a trace of the card. Two blurred blobs moved with
+   transform — the old version repainted a full-screen gradient on every
+   pointermove, which is what made the whole page feel like it was stuttering. */
 .wash {
   position: fixed;
-  inset: 0;
+  inset: -20%;
   z-index: 0;
   pointer-events: none;
-  opacity: var(--wash-on, 0);
-  transition: opacity 900ms var(--ease);
-  background:
-    radial-gradient(
-      46% 40% at calc(50% + var(--px, 0) * 32%) calc(46% + var(--py, 0) * 26%),
-      rgba(92, 225, 255, 0.075),
-      transparent 70%
-    ),
-    radial-gradient(
-      42% 38% at calc(50% - var(--px, 0) * 30%) calc(56% - var(--py, 0) * 22%),
-      rgba(255, 94, 207, 0.06),
-      transparent 72%
-    );
+  opacity: var(--wash-on, 1);
 }
-
-:root[data-theme='light'] .wash {
-  background:
-    radial-gradient(
-      46% 40% at calc(50% + var(--px, 0) * 32%) calc(46% + var(--py, 0) * 26%),
-      rgba(0, 140, 190, 0.07),
-      transparent 70%
-    ),
-    radial-gradient(
-      42% 38% at calc(50% - var(--px, 0) * 30%) calc(56% - var(--py, 0) * 22%),
-      rgba(190, 0, 130, 0.05),
-      transparent 72%
-    );
+.wash span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 46vmax;
+  height: 46vmax;
+  margin: -23vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+.wash-a { background: rgba(92, 225, 255, 0.1); transform: translate3d(calc(var(--px, 0) * 14vmax), calc(var(--py, 0) * 10vmax), 0); }
+.wash-b { background: rgba(255, 94, 207, 0.085); transform: translate3d(calc(var(--px, 0) * -12vmax), calc(var(--py, 0) * -8vmax), 0); }
+:root[data-theme='light'] .wash-a { background: rgba(0, 130, 180, 0.08); }
+:root[data-theme='light'] .wash-b { background: rgba(180, 0, 120, 0.06); }
 
 body {
   margin: 0;
@@ -136,35 +126,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
    Stage
    ========================================================================= */
 
-.stage {
-  position: relative;
-  z-index: 1;
-  min-height: 100dvh;
-  display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: clamp(1.75rem, 4vh, 2.75rem);
-  padding: 4rem var(--gutter) 9.5rem;
-  text-align: center;
-}
 
-.card-slot { width: min(360px, 74vw); }
-
-/* Holographic laminate, riding on top of the shader's own sheen. */
-.card-slot .lc-flare {
-  background: var(--holo);
-  background-size: 260% 100%;
-  background-position: var(--lc-glare-x, 50%) 0;
-  mix-blend-mode: color-dodge;
-  opacity: calc(0.34 * var(--lc-energy, 0));
-}
-
-.card-slot .lc-card {
-  box-shadow:
-    0 1px 1px rgba(255, 255, 255, 0.18) inset,
-    0 0 0 1px rgba(255, 255, 255, 0.09) inset,
-    0 30px 80px -30px rgba(0, 0, 0, 0.9);
-}
 
 /* =========================================================================
    Loading — the card is the loader; this is the wordmark under it
@@ -234,39 +196,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
   text-wrap: balance;
 }
 
-/* The accent word is the effect: an iridescent sweep behind ridge lines. */
-.copy h1 em {
-  position: relative;
-  font-style: normal;
-  background: var(--holo);
-  background-size: 220% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: holo-text 7s linear infinite;
-}
-@keyframes holo-text {
-  to { background-position: 220% 0; }
-}
-.copy h1 em::after {
-  content: '';
-  position: absolute;
-  inset: 0.1em 0 0.14em;
-  background: repeating-linear-gradient(
-    90deg,
-    color-mix(in oklab, var(--bg) 60%, transparent) 0 1px,
-    transparent 1px 6px
-  );
-}
-
-.copy p { margin: 0; color: var(--ink-2); font-size: 0.9375rem; text-wrap: pretty; }
 
 /* =========================================================================
    Maker
    ========================================================================= */
 
-.maker { display: grid; gap: 0.9rem; width: min(420px, 100%); text-align: left; }
-.dials { display: grid; gap: 0.6rem; }
 
 /* =========================================================================
    Dock — the only navigation, and it sits at the bottom
@@ -329,23 +263,27 @@ button, input, select, textarea { font: inherit; color: inherit; }
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 300ms var(--ease), color 300ms var(--ease),
-    transform 160ms var(--ease);
+  transition: color 220ms var(--ease), border-color 220ms var(--ease),
+    transform 140ms var(--ease), box-shadow 220ms var(--ease);
 }
-.btn:hover:not(:disabled) { background: var(--glass-2); color: var(--ink); }
-.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:not(.btn-holo) { background: transparent; }
+.btn:not(.btn-holo):hover:not(:disabled) { background: var(--glass-2); color: var(--ink); }
+.btn:active:not(:disabled) { transform: translateY(1px) scale(0.985); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* The sweep is an animation on background-position only. Hover changes
+   brightness, which is compositor work — nothing here interpolates a gradient. */
 .btn-holo {
   padding-right: 0.4rem;
   color: var(--holo-ink);
   font-weight: 700;
-  background: var(--holo);
+  background-image: var(--holo);
   background-size: 220% 100%;
-  animation: holo-drift-x 7s linear infinite;
-  box-shadow: 0 8px 24px -12px #7b7bff;
+  animation: holo-drift-x 9s linear infinite;
+  box-shadow: 0 8px 22px -14px #7b7bff;
 }
-.btn-holo:hover:not(:disabled) { color: var(--holo-ink); }
+.btn-holo:hover:not(:disabled) { filter: brightness(1.08) saturate(1.1); }
+.btn-holo:disabled { filter: grayscale(0.7); }
 @keyframes holo-drift-x {
   to { background-position: 220% 0; }
 }
@@ -744,108 +682,163 @@ textarea.text-input { resize: vertical; min-height: 3.2rem; font-family: inherit
 }
 
 /* =========================================================================
-   The case
-   A graded-card slab: acrylic shell, a printed label across the top, the card
-   recessed in a well. The shell is a sibling of the card, not its parent, so
-   the card can rise out of it without ever unmounting.
+   The case, in three dimensions
+
+   Depth is not a gradient. The backing plate, the shell, the card and the front
+   sheet of acrylic each sit at their own Z, and rotating the assembly slides
+   them against each other. That parallax is the thickness. Four thin edge faces
+   close the box off at the sides.
    ========================================================================= */
 
-.card-slot, .greeting-card { container-type: inline-size; }
+.rig {
+  width: 100%;
+  perspective: 1200px;
+  perspective-origin: 50% 45%;
+  container-type: inline-size;
+}
 
-.encase {
+.slab3d {
   position: relative;
   width: 100%;
-  display: grid;
-  place-items: center;
-  padding: 21% 8% 9%;
-  transition: padding 620ms var(--ease);
+  aspect-ratio: 5 / 7.9;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
-.encase[data-encased='false'] { padding: 6% 0 0; }
 
-.slab {
+/* --- layers -------------------------------------------------------------- */
+
+.slab-back,
+.slab-body,
+.slab-glass {
   position: absolute;
   inset: 0;
-  border-radius: 1.5rem;
+  border-radius: 4.5cqw;
+  backface-visibility: hidden;
+}
+
+.slab-back {
+  transform: translateZ(-13px);
+  background: linear-gradient(165deg, #23262e, #0b0c10 60%, #191c23);
+  box-shadow: 0 46px 90px -40px rgba(0, 0, 0, 0.95);
+}
+
+.slab-body {
+  transform: translateZ(0);
+  overflow: hidden;
   background: linear-gradient(
     168deg,
-    rgba(255, 255, 255, 0.14),
-    rgba(255, 255, 255, 0.03) 30%,
-    rgba(255, 255, 255, 0.02) 70%,
-    rgba(255, 255, 255, 0.1)
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.02) 34%,
+    rgba(255, 255, 255, 0.015) 68%,
+    rgba(255, 255, 255, 0.07)
   );
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
-    0 44px 90px -44px rgba(0, 0, 0, 0.95);
-  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 }
 
-/* Textures: what the acrylic is doing, not what colour it is. */
-.slab[data-texture='frosted'] {
+/* The card floats between the shell and the front sheet. */
+.slab-card {
+  position: absolute;
+  left: 6.5%;
+  right: 6.5%;
+  top: 22.5%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.slab-glass {
+  transform: translateZ(15px);
+  pointer-events: none;
+  background: linear-gradient(
+    104deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.16) 46%,
+    rgba(255, 255, 255, 0.03) 54%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  background-position: var(--shine, 50%) 0;
+  background-size: 260% 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* --- the cut edges ------------------------------------------------------- */
+
+.slab-edge {
+  position: absolute;
+  background: linear-gradient(180deg, #dfe3ea, #7d838f 45%, #2b2f37);
+  opacity: 0.85;
+}
+.slab-edge-t, .slab-edge-b { left: 2%; right: 2%; height: 28px; }
+.slab-edge-l, .slab-edge-r { top: 2%; bottom: 2%; width: 28px; }
+
+.slab-edge-t { top: 0; transform: translateY(-50%) rotateX(90deg); transform-origin: top; }
+.slab-edge-b { bottom: 0; transform: translateY(50%) rotateX(-90deg); transform-origin: bottom; }
+.slab-edge-l { left: 0; transform: translateX(-50%) rotateY(-90deg); transform-origin: left; }
+.slab-edge-r { right: 0; transform: translateX(50%) rotateY(90deg); transform-origin: right; }
+
+/* --- textures ------------------------------------------------------------ */
+
+.slab3d[data-texture='frosted'] .slab-body {
   backdrop-filter: blur(7px);
   -webkit-backdrop-filter: blur(7px);
-  background: linear-gradient(168deg, rgba(255,255,255,.2), rgba(255,255,255,.07) 55%, rgba(255,255,255,.14));
+  background: linear-gradient(168deg, rgba(255,255,255,.19), rgba(255,255,255,.06) 55%, rgba(255,255,255,.13));
 }
-.slab[data-texture='carbon']::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
+.slab3d[data-texture='carbon'] .slab-body {
+  background-image:
     repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 2px, transparent 2px 5px),
-    repeating-linear-gradient(-45deg, rgba(0,0,0,.16) 0 2px, transparent 2px 5px);
+    repeating-linear-gradient(-45deg, rgba(0,0,0,.2) 0 2px, transparent 2px 5px);
 }
-.slab[data-texture='holo']::before {
+.slab3d[data-texture='holo'] .slab-glass::after {
   content: '';
   position: absolute;
   inset: 0;
-  opacity: 0.24;
+  border-radius: inherit;
+  opacity: 0.3;
   background: var(--holo);
   background-size: 240% 100%;
-  mix-blend-mode: color-dodge;
-  animation: holo-drift-x 9s linear infinite;
+  background-position: var(--shine, 50%) 0;
+  mix-blend-mode: overlay;
 }
 
-/* The printed label. Sized in container units so it stays readable at any
-   card width — this is the part people actually read. */
+/* --- the printed label --------------------------------------------------- */
+
 .slab-label {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 19%;
+  height: 17.5%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 4cqw;
   padding: 0 4.5cqw;
-  background: linear-gradient(180deg,
-    color-mix(in oklab, var(--tint) 92%, #fff),
-    var(--tint));
+  background: linear-gradient(180deg, color-mix(in oklab, var(--tint) 94%, #fff), var(--tint));
   color: #14161a;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.32);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35), inset 0 -6px 12px -10px rgba(0, 0, 0, 0.6);
 }
 
 /* Slate is dark stock, so its printing flips to light. */
-.slab[style*='#4c5260'] .slab-label { color: #f4f6fa; }
-.slab[style*='#4c5260'] .slab-sub { color: rgba(244, 246, 250, 0.7); }
-.slab[style*='#4c5260'] .slab-grade-w { color: rgba(244, 246, 250, 0.66); }
+.slab3d[style*='#4c5260'] .slab-label { color: #f4f6fa; }
+.slab3d[style*='#4c5260'] .slab-sub,
+.slab3d[style*='#4c5260'] .slab-grade-w { color: rgba(244, 246, 250, 0.72); }
 
-.slab-id { display: grid; gap: 0.35cqw; min-width: 0; }
+.slab-id { display: grid; gap: 0.3cqw; min-width: 0; }
 
 .slab-brand {
   display: inline-flex;
   align-items: center;
   gap: 1.2cqw;
-  font-size: 2.6cqw;
+  font-size: 2.5cqw;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.15em;
 }
 
 .slab-chip {
-  width: 4.4cqw;
-  height: 3.1cqw;
+  width: 4.2cqw;
+  height: 3cqw;
   border-radius: 1px;
   background:
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0 1px, transparent 1px 3px),
@@ -854,135 +847,571 @@ textarea.text-input { resize: vertical; min-height: 3.2rem; font-family: inherit
 }
 
 .slab-title {
-  font-size: 5.2cqw;
+  font-size: 5.4cqw;
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1.05;
+  line-height: 1.04;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .slab-sub {
-  font-size: 2.5cqw;
+  font-size: 2.4cqw;
   letter-spacing: 0.04em;
-  color: rgba(20, 22, 26, 0.62);
+  color: rgba(20, 22, 26, 0.66);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.slab-grade { display: grid; justify-items: end; gap: 0.2cqw; flex-shrink: 0; }
-.slab-grade-w { font-size: 2.1cqw; font-weight: 800; letter-spacing: 0.14em; color: rgba(20,22,26,.6); }
-.slab-grade-n { font-size: 8.2cqw; font-weight: 900; letter-spacing: -0.05em; line-height: 0.9; }
+.slab-grade { display: grid; justify-items: end; gap: 0.1cqw; flex-shrink: 0; }
+.slab-grade-w { font-size: 2cqw; font-weight: 800; letter-spacing: 0.14em; color: rgba(20,22,26,.62); }
+.slab-grade-n { font-size: 8.4cqw; font-weight: 900; letter-spacing: -0.05em; line-height: 0.88; }
 
-/* The recess the card sits in. */
 .slab-well {
   position: absolute;
-  inset: 19% 6% 8%;
-  border-radius: 0.5rem;
+  inset: 20.5% 5% 7%;
+  border-radius: 1.5cqw;
   box-shadow:
-    inset 0 2px 7px rgba(0, 0, 0, 0.6),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+    inset 0 3px 9px rgba(0, 0, 0, 0.62),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .slab-serial {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 2.2%;
+  bottom: 2%;
   text-align: center;
   font-family: var(--font-mono);
-  font-size: 2.2cqw;
+  font-size: 2.1cqw;
   letter-spacing: 0.2em;
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* One hard specular streak, so it reads as acrylic and not as a border. */
-.slab-gloss {
+/* Out of the case, the shell drops away and the card owns the frame. */
+.slab3d[data-encased='false'] .slab-back,
+.slab3d[data-encased='false'] .slab-body,
+.slab3d[data-encased='false'] .slab-glass,
+.slab3d[data-encased='false'] .slab-edge {
+  opacity: 0;
+  transition: opacity 480ms var(--ease);
+  pointer-events: none;
+}
+.slab3d[data-encased='true'] .slab-back,
+.slab3d[data-encased='true'] .slab-body,
+.slab3d[data-encased='true'] .slab-glass,
+.slab3d[data-encased='true'] .slab-edge {
+  transition: opacity 520ms var(--ease) 220ms;
+}
+
+/* =========================================================================
+   Lenticular holography
+   The interlace is the lenticular half. This is the other half: a foil that
+   is always faintly there and swings hard with the angle, keyed off the
+   card's own glare position rather than a timer.
+   ========================================================================= */
+
+.slab-card .lc-flare {
+  background:
+    linear-gradient(
+      100deg,
+      transparent 8%,
+      rgba(92, 225, 255, 0.5) 24%,
+      rgba(123, 123, 255, 0.45) 36%,
+      rgba(255, 94, 207, 0.5) 48%,
+      rgba(255, 209, 102, 0.45) 60%,
+      rgba(92, 255, 176, 0.45) 72%,
+      transparent 90%
+    );
+  background-size: 220% 100%;
+  background-position: calc(var(--lc-glare-x, 50%) * 1.6) 0;
+  mix-blend-mode: color-dodge;
+  opacity: calc(0.16 + 0.5 * var(--lc-energy, 0));
+}
+
+/* A second, tighter rainbow that only appears off-axis. */
+.slab-card .lc-glare {
+  background: radial-gradient(
+    62% 62% at var(--lc-glare-x, 50%) var(--lc-glare-y, 50%),
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0.06) 46%,
+    transparent 74%
+  );
+  mix-blend-mode: soft-light;
+  opacity: calc(0.4 + 0.6 * var(--lc-energy, 0));
+}
+
+.slab-card .lc-card {
+  box-shadow:
+    0 1px 1px rgba(255, 255, 255, 0.2) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 26px 60px -26px rgba(0, 0, 0, 0.9);
+}
+
+/* =========================================================================
+   The card — laid out the way a real trading card is
+   Sized in container units throughout, so every part stays in proportion and
+   readable whether the card is 240px wide or 480.
+   ========================================================================= */
+
+.tc { container-type: inline-size; width: 100%; }
+
+.tc-board {
+  display: grid;
+  gap: 2cqw;
+  padding: 3cqw;
+  border-radius: 3cqw;
+  aspect-ratio: 63 / 88;            /* a real card, 63 × 88 mm */
+  background:
+    linear-gradient(168deg, rgba(255,255,255,.16), transparent 30%),
+    linear-gradient(150deg, var(--tc-a), var(--tc-b));
+  box-shadow: inset 0 0 0 0.5cqw rgba(0, 0, 0, 0.32);
+  grid-template-rows: auto auto auto auto 1fr auto;
+}
+
+/* --- name plate ---------------------------------------------------------- */
+
+.tc-plate {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+  padding: 1.6cqw 2.4cqw;
+  border-radius: 2cqw;
+  background: linear-gradient(180deg, rgba(0,0,0,.5), rgba(0,0,0,.3));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
+  /* The name plate takes foil, the way it does on a real holo. */
+  position: relative;
+  overflow: hidden;
+}
+.tc-plate::after {
+  content: '';
   position: absolute;
   inset: 0;
+  background: var(--holo);
+  background-size: 240% 100%;
+  background-position: var(--lc-glare-x, 50%) 0;
+  mix-blend-mode: color-dodge;
+  opacity: 0.14;
   pointer-events: none;
-  background: linear-gradient(
-    104deg,
-    transparent 12%,
-    rgba(255, 255, 255, 0.18) 25%,
-    rgba(255, 255, 255, 0.04) 33%,
-    transparent 45%
+}
+
+.tc-names { min-width: 0; display: grid; gap: 0.2cqw; }
+.tc-stage {
+  font-size: 2.4cqw;
+  letter-spacing: 0.06em;
+  color: color-mix(in oklab, var(--tc-ink) 62%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tc-title {
+  margin: 0;
+  font-size: 5.6cqw;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  color: var(--tc-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tc-stat { display: flex; align-items: baseline; gap: 1cqw; margin-left: auto; flex-shrink: 0; }
+.tc-stat-label { font-size: 2.6cqw; font-weight: 700; color: color-mix(in oklab, var(--tc-ink) 60%, transparent); }
+.tc-stat-value { font-size: 6.4cqw; font-weight: 900; letter-spacing: -0.04em; color: var(--tc-ink); }
+.tc-type {
+  display: grid;
+  place-items: center;
+  width: 6cqw;
+  height: 6cqw;
+  border-radius: 999px;
+  background: var(--tc-accent);
+  color: var(--tc-board);
+  font-size: 3.2cqw;
+}
+
+/* --- illustration window ------------------------------------------------- */
+
+.tc-art {
+  position: relative;
+  border-radius: 1.4cqw;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 0.5cqw var(--tc-accent),
+    0 1cqw 3cqw -1cqw rgba(0, 0, 0, 0.6);
+}
+.tc-frames {
+  position: absolute;
+  left: 1.6cqw;
+  top: 1.6cqw;
+  padding: 0.5cqw 1.4cqw;
+  border-radius: 0.8cqw;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--tc-ink);
+  font-family: var(--font-mono);
+  font-size: 2.1cqw;
+  letter-spacing: 0.1em;
+}
+
+/* --- moves --------------------------------------------------------------- */
+
+.tc-moves { display: grid; gap: 1.4cqw; }
+
+.tc-move {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 2cqw;
+  padding: 1.2cqw 0;
+  border-top: 1px solid color-mix(in oklab, var(--tc-ink) 18%, transparent);
+}
+.tc-move:first-child { border-top: 0; }
+
+.tc-cost { display: flex; gap: 0.6cqw; }
+.tc-pip {
+  width: 3cqw;
+  height: 3cqw;
+  border-radius: 999px;
+  background: var(--tc-accent);
+  box-shadow: inset 0 0 0 0.4cqw rgba(0, 0, 0, 0.35);
+}
+
+.tc-move-body { display: grid; gap: 0.1cqw; min-width: 0; }
+.tc-move-name { font-size: 3.6cqw; font-weight: 700; color: var(--tc-ink); letter-spacing: -0.01em; }
+.tc-move-text {
+  font-size: 2.5cqw;
+  line-height: 1.3;
+  color: color-mix(in oklab, var(--tc-ink) 62%, transparent);
+}
+.tc-move-value { font-size: 5cqw; font-weight: 900; letter-spacing: -0.04em; color: var(--tc-ink); }
+
+/* --- weakness / resistance / retreat ------------------------------------- */
+
+.tc-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1cqw;
+  padding: 1.4cqw 2cqw;
+  border-radius: 1.4cqw;
+  background: rgba(0, 0, 0, 0.3);
+}
+.tc-strip-cell { display: grid; gap: 0.2cqw; }
+.tc-strip-label {
+  font-size: 2cqw;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--tc-ink) 52%, transparent);
+}
+.tc-strip-value { font-size: 3cqw; font-weight: 700; color: var(--tc-ink); }
+
+/* --- flavour and footer -------------------------------------------------- */
+
+.tc-flavour {
+  margin: 0;
+  align-self: center;
+  font-size: 2.8cqw;
+  line-height: 1.42;
+  font-style: italic;
+  color: color-mix(in oklab, var(--tc-ink) 76%, transparent);
+  text-wrap: pretty;
+}
+
+.tc-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2cqw;
+  padding-top: 1.2cqw;
+  border-top: 1px solid color-mix(in oklab, var(--tc-ink) 18%, transparent);
+  font-size: 2.2cqw;
+  color: color-mix(in oklab, var(--tc-ink) 58%, transparent);
+}
+.tc-foot-right { display: flex; align-items: center; gap: 1.4cqw; }
+.tc-set { font-weight: 700; letter-spacing: 0.12em; }
+.tc-rarity { color: var(--tc-accent); letter-spacing: 0.1em; }
+
+/* --- the other three layouts --------------------------------------------- */
+
+.tc[data-layout='full'] .tc-board,
+.tc[data-layout='minimal'] .tc-board,
+.tc[data-layout='instant'] .tc-board {
+  grid-template-rows: 1fr auto;
+  gap: 0;
+  padding: 0;
+}
+.tc[data-layout='full'] .tc-board { position: relative; }
+.tc[data-layout='full'] .tc-art { border-radius: 3cqw; box-shadow: none; height: 100%; }
+.tc[data-layout='full'] .tc-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: grid;
+  gap: 0.6cqw;
+  padding: 6cqw 4cqw 4cqw;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.88));
+  color: #fff;
+}
+.tc[data-layout='full'] .tc-title { font-size: 7cqw; }
+
+.tc[data-layout='instant'] .tc-board { background: #f7f5ef; padding: 4cqw 4cqw 0; gap: 3cqw; }
+.tc[data-layout='instant'] .tc-art { box-shadow: inset 0 0 0 1px rgba(0,0,0,.16); border-radius: 0.5cqw; }
+.tc[data-layout='instant'] .tc-caption { display: grid; gap: 1cqw; padding-bottom: 4cqw; }
+.tc[data-layout='instant'] .tc-title { color: #1b1a17; font-size: 5.6cqw; }
+.tc[data-layout='instant'] .tc-flavour { color: rgba(27, 26, 23, 0.66); font-size: 3cqw; }
+
+.tc[data-layout='minimal'] .tc-board { padding: 3cqw; gap: 2.4cqw; }
+.tc[data-layout='minimal'] .tc-min {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2cqw;
+  padding-bottom: 1cqw;
+}
+
+.tc-badge {
+  justify-self: start;
+  padding: 0.8cqw 2cqw;
+  border-radius: 999px;
+  background: var(--tc-accent);
+  color: var(--tc-board);
+  font-size: 2.4cqw;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.tc[data-layout='instant'] .tc-badge { color: #fff; background: var(--tc-b); }
+
+/* =========================================================================
+   Stage — two real layouts, both using the whole width
+   ========================================================================= */
+
+.stage {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  padding: clamp(2rem, 5vh, 4rem) var(--gutter) 8rem;
+  display: grid;
+  align-content: center;
+}
+
+/* --- home: copy on the left, the case on the right ----------------------- */
+
+.home {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 6rem);
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+}
+
+.home-copy { display: grid; gap: 1.15rem; justify-items: start; }
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.kicker-dot {
+  width: 20px;
+  height: 14px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.42) 0 1px, transparent 1px 4px),
+    var(--holo);
+  background-size: auto, 260% 100%;
+  animation: holo-drift 6s linear infinite;
+}
+
+.home-copy h1 {
+  margin: 0;
+  font-weight: 900;
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+
+/* The accent word wears the ridges it names, and drifts like foil. */
+.home-copy h1 em {
+  position: relative;
+  font-style: normal;
+  background: var(--holo);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: holo-text 8s linear infinite;
+}
+@keyframes holo-text { to { background-position: 220% 0; } }
+.home-copy h1 em::after {
+  content: '';
+  position: absolute;
+  inset: 0.1em 0 0.14em;
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--bg) 58%, transparent) 0 1px,
+    transparent 1px 6px
   );
 }
 
-.encase-card { position: relative; z-index: 2; width: 100%; }
-.encase[data-encased='true'] .encase-card { width: 88%; }
-
-/* =========================================================================
-   Greeting layout
-   ========================================================================= */
-
-.greeting-inner {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 1.25rem;
-  width: min(400px, 100%);
+.lede {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--ink-2);
+  font-size: clamp(0.9375rem, 1.2vw, 1.0625rem);
+  text-wrap: pretty;
 }
-.greeting-copy { display: grid; justify-items: center; gap: 0.9rem; }
 
-/* =========================================================================
-   Sampler and maker controls
-   ========================================================================= */
+/* Four kinds of card, pickable straight from the front page. */
+.picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 27rem;
+  margin-top: 0.35rem;
+}
 
-.sampler { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center; margin-top: 0.4rem; }
-
-.sample {
-  display: inline-flex;
+.pick {
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.8rem;
+  gap: 0.65rem;
+  padding: 0.65rem 0.8rem;
   border: 1px solid var(--hair);
-  border-radius: 999px;
+  border-radius: 0.9rem;
   background: var(--glass-2);
   color: var(--ink-2);
-  font-size: 0.78125rem;
   cursor: pointer;
-  transition: color 300ms var(--ease), border-color 300ms var(--ease), background 300ms var(--ease);
+  text-align: left;
+  transition: color 220ms var(--ease), border-color 220ms var(--ease),
+    transform 160ms var(--ease);
 }
-.sample:hover { color: var(--ink); border-color: var(--hair-2); }
-.sample[aria-pressed='true'] {
+.pick:hover { color: var(--ink); border-color: var(--hair-2); transform: translateY(-2px); }
+.pick[aria-pressed='true'] {
   color: var(--ink);
-  border-color: color-mix(in oklab, var(--sample) 60%, transparent);
-  background: color-mix(in oklab, var(--sample) 15%, transparent);
+  border-color: color-mix(in oklab, var(--pick) 62%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--pick) 40%, transparent),
+    0 10px 26px -18px var(--pick);
 }
-.sample-glyph { color: var(--sample); font-size: 0.875rem; line-height: 1; }
 
-.attr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
-.attr-grid .field { gap: 0.3rem; }
-
-.case-panel {
+.pick-glyph {
   display: grid;
-  gap: 0.55rem;
-  padding: 0.8rem;
-  border-radius: 0.9rem;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.55rem;
+  background: color-mix(in oklab, var(--pick) 22%, transparent);
+  color: var(--pick);
+  font-size: 0.9375rem;
+  flex-shrink: 0;
+}
+.pick-body { display: grid; gap: 0.05rem; min-width: 0; }
+.pick-label { font-size: 0.8125rem; font-weight: 600; }
+.pick-badge {
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-case { width: min(400px, 100%); justify-self: center; }
+
+/* --- maker: case on the left, everything else on the right --------------- */
+
+.make {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: start;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+}
+
+.make-card {
+  position: sticky;
+  top: clamp(2rem, 8vh, 5rem);
+  width: min(360px, 100%);
+  justify-self: center;
+}
+
+.make-panel {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.panel-block {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.9rem 1rem 1rem;
   border: 1px solid var(--hair);
+  border-radius: 1rem;
   background: var(--glass-2);
 }
+.panel-block h2 {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.two-up { display: grid; grid-template-columns: 1fr 5.5rem; gap: 0.5rem; }
+.move-edit { display: grid; gap: 0.4rem; padding-top: 0.55rem; border-top: 1px solid var(--hair); }
 
 .swatches { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-
 .swatch {
-  width: 1.7rem;
-  height: 1.7rem;
+  width: 1.6rem;
+  height: 1.6rem;
   border-radius: 999px;
   border: 1px solid var(--hair-2);
   background: var(--sw);
   cursor: pointer;
-  transition: transform 200ms var(--ease), box-shadow 200ms var(--ease);
+  transition: transform 180ms var(--ease);
 }
-.swatch:hover { transform: scale(1.08); }
-.swatch[aria-pressed='true'] {
-  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--sw);
+.swatch:hover { transform: scale(1.1); }
+.swatch[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--sw); }
+
+.loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.9rem;
+  background: var(--bg);
+  z-index: 30;
 }
 
-@media (max-width: 460px) {
-  .attr-grid { grid-template-columns: minmax(0, 1fr); }
+/* =========================================================================
+   Responsive
+   ========================================================================= */
+
+@media (max-width: 1000px) {
+  .home, .make { grid-template-columns: minmax(0, 1fr); }
+  .home { gap: 2.5rem; justify-items: center; text-align: center; }
+  .home-copy { justify-items: center; }
+  .home-case { width: min(320px, 76vw); order: -1; }
+  .make-card { position: static; width: min(300px, 72vw); }
+  .picker { max-width: 30rem; }
+}
+
+@media (max-width: 560px) {
+  .stage { padding: 1.5rem var(--gutter) 8rem; }
+  .picker { grid-template-columns: minmax(0, 1fr); }
+  .two-up { grid-template-columns: 1fr 4.5rem; }
+  .dock { width: 100%; justify-content: space-between; padding-left: 1rem; }
+  .dock .mark span:last-child { display: none; }
 }
