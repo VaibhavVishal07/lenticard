@@ -93,24 +93,32 @@ export function Slab({
     [px, py, onAngle],
   );
 
+  // The case tilts only under the pointer. Listening on the window meant it
+  // swung around while you were reading something on the other side of the
+  // page, which reads as a thing wobbling on its own rather than a thing you
+  // are holding.
   useEffect(() => {
-    if (!interactive) {
+    const node = rig.current;
+    const rest = () => {
       px.set(0);
       py.set(0);
+    };
+    if (!node || !interactive) {
+      rest();
       return;
     }
-    const reset = () => {
-      px.set(0);
-      py.set(0);
+    const leave = () => {
+      rest();
       onAngle?.(0, 0);
     };
-    window.addEventListener('pointermove', track, { passive: true });
-    document.addEventListener('pointerleave', reset);
+    node.addEventListener('pointermove', track, { passive: true });
+    node.addEventListener('pointerleave', leave);
     return () => {
-      window.removeEventListener('pointermove', track);
-      document.removeEventListener('pointerleave', reset);
+      node.removeEventListener('pointermove', track);
+      node.removeEventListener('pointerleave', leave);
+      rest();
     };
-  }, [track, px, py, onAngle, interactive]);
+  }, [track, px, py, onAngle, interactive]);;
 
   return (
     <div className="rig" ref={rig}>

@@ -11,6 +11,14 @@ export interface Frame {
   height: number;
 }
 
+/**
+ * Where each frame lands as the card turns.
+ *
+ * A bare ordinal told you nothing — the whole reason the order matters is that
+ * the first frame is what someone sees before they have tilted anything.
+ */
+const POSITION = ['Left tilt', 'Straight on', 'Right tilt', 'Fourth', 'Fifth', 'Sixth'];
+
 let counter = 0;
 
 async function readFrame(file: File): Promise<Frame> {
@@ -77,29 +85,40 @@ export function Frames({ frames, onChange, onAdd, onError }: FramesProps) {
     accept(event.dataTransfer.files);
   }
 
+  const prompt = full
+    ? `That is all ${MAX_FRAMES} frames`
+    : frames.length
+      ? 'Add another photo'
+      : 'Drop photos, or click to choose';
+
+  const note = frames.length
+    ? `${frames.length} of ${MAX_FRAMES} · drag to reorder`
+    : 'Two or three of the same subject works best';
+
   return (
     <>
       <div
         className="dropzone"
         data-over={over}
+        data-full={full}
         onDragOver={(event) => {
           event.preventDefault();
           setOver(true);
         }}
         onDragLeave={() => setOver(false)}
         onDrop={onDrop}
-        onClick={() => input.current?.click()}
         role="button"
         tabIndex={0}
+        onClick={() => input.current?.click()}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') input.current?.click();
         }}
       >
-        <ImageSquare size={20} weight="light" aria-hidden />
-        <p>{full ? 'Card is full' : 'Drop images, or click to choose'}</p>
-        <small>
-          {frames.length} of {MAX_FRAMES} frames · the first one reads at full left tilt
-        </small>
+        <span className="dropzone-icon" aria-hidden>
+          <ImageSquare size={22} weight="light" />
+        </span>
+        <p>{prompt}</p>
+        <small>{note}</small>
         <input
           ref={input}
           type="file"
@@ -151,18 +170,18 @@ function FrameRow({
       whileDrag={{ scale: 1.02, boxShadow: '0 12px 28px -10px rgba(0,0,0,0.8)' }}
     >
       <span className="grip" onPointerDown={(event) => controls.start(event)} aria-hidden>
-        <DotsSixVertical size={15} weight="light" />
+        <DotsSixVertical size={16} weight="bold" />
       </span>
-      <span className="frame-index">{index + 1}</span>
       <img src={frame.url} alt="" />
       <span className="frame-meta">
+        <span className="frame-slot">{POSITION[index] ?? `Frame ${index + 1}`}</span>
         <span className="frame-name">{frame.name}</span>
         <span className="frame-sub">
           {frame.width}×{frame.height} · {shape}
         </span>
       </span>
       <button className="icon-btn" onClick={onRemove} aria-label={`Remove ${frame.name}`}>
-        <X size={14} weight="light" />
+        <X size={14} weight="bold" />
       </button>
     </Reorder.Item>
   );

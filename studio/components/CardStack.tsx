@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { Slab } from './Slab';
+import type { CardLayout } from '../lib/themes';
 
 export interface StackEntry {
   id: string;
@@ -8,14 +9,18 @@ export interface StackEntry {
   name: string;
   set: string;
   tint: string;
+  /** Which template this slab is showing off. */
+  layout: CardLayout;
+  /** Which occasion supplies its palette and printing. */
+  themeId: string;
   /** Only one entry carries the live card; the rest are stills. */
   real?: boolean;
 }
 
 interface CardStackProps {
   entries: StackEntry[];
-  /** Rendered inside whichever slab is being handled, if that slab is the real one. */
-  live: () => ReactNode;
+  /** Given the slot and whether it is the live one, returns the card to print. */
+  render: (entry: StackEntry, live: boolean) => ReactNode;
   onAngle?: (x: number, y: number) => void;
 }
 
@@ -28,7 +33,7 @@ interface CardStackProps {
  * run through that, so the rest hold a still. The belt halts under the pointer,
  * and only the slab you are on tracks it.
  */
-export function CardStack({ entries, live, onAngle }: CardStackProps) {
+export function CardStack({ entries, render, onAngle }: CardStackProps) {
   const [held, setHeld] = useState<string | null>(entries[0]?.id ?? null);
 
   const slot = useCallback(
@@ -50,16 +55,12 @@ export function CardStack({ entries, live, onAngle }: CardStackProps) {
             interactive={isHeld}
             onAngle={isHeld && entry.real ? onAngle : undefined}
           >
-            {isHeld && entry.real ? (
-              live()
-            ) : (
-              <img className="stack-still" src={entry.still} alt="" loading="lazy" />
-            )}
+            {render(entry, isHeld && entry.real === true)}
           </Slab>
         </div>
       );
     },
-    [held, live, onAngle],
+    [held, render, onAngle],
   );
 
   return (

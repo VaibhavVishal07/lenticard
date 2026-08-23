@@ -18,7 +18,6 @@ import { CardStack, type StackEntry } from './components/CardStack';
 import { CASE_TEXTURES, CASE_TINTS, Slab, type CaseTexture } from './components/Slab';
 import { TradingCard } from './components/TradingCard';
 import { buildDefaultCard } from './lib/default-card';
-import { buildPlaceholders } from './lib/placeholders';
 import { INITIAL, type CardSettings } from './lib/presets';
 import { decodePayload, type SharePayload } from './lib/share';
 import { clearLocation, hasCardInLocation, loadFromLocation } from './lib/stores';
@@ -26,6 +25,7 @@ import {
   copyFor,
   DEFAULT_TEMPLATE,
   DEFAULT_THEME,
+  findTheme,
   TEMPLATES,
   THEMES,
   type CardCopy,
@@ -84,7 +84,6 @@ export default function App() {
 
   const [stage, setStage] = useState<Stage>('home');
   const [step, setStep] = useState<Step>('photos');
-  const [encased, setEncased] = useState(true);
   const [replyTo, setReplyTo] = useState<string | undefined>();
   const [received, setReceived] = useState<SharePayload | null>(null);
   const [checking, setChecking] = useState(hasCardInLocation());
@@ -142,18 +141,21 @@ export default function App() {
   const images = useMemo(() => photos.map((p) => p.url), [photos]);
 
   // The column beside the pitch: one real card, the rest waiting for art.
+  /**
+   * The column is the range, not a queue of one card.
+   *
+   * Four slabs, one per template, so the variations are on the page instead of
+   * behind a picker you have to open first. Only the one under the pointer is
+   * a live lens — browsers cap WebGL contexts at around sixteen and a belt of
+   * them would run straight through that.
+   */
   const showcase = useMemo<StackEntry[]>(() => {
     const base = import.meta.env.BASE_URL;
     return [
-      {
-        id: 's1',
-        still: `${base}cards/astra-1.jpg`,
-        name: 'Astra Volt',
-        set: 'STORMBORN',
-        tint: '#2657b8',
-        real: true,
-      },
-      ...buildPlaceholders().map((p, i) => ({ ...p, id: `p${i + 2}` })),
+      { id: 's1', still: base + 'cards/astra-1.jpg', name: 'Astra Volt', set: 'STORMBORN', tint: '#2657b8', layout: 'fullart', themeId: 'congrats', real: true },
+      { id: 's2', still: base + 'cards/astra-2.jpg', name: 'Yours, Obviously', set: 'HEARTLAND', tint: '#d5352b', layout: 'rookie', themeId: 'valentine' },
+      { id: 's3', still: base + 'cards/astra-3.jpg', name: 'Called It', set: 'FIRST PRINT', tint: '#1b1d22', layout: 'chrome', themeId: 'congrats' },
+      { id: 's4', still: base + 'cards/astra-1.jpg', name: 'Thirty, Somehow', set: 'ANOTHER YEAR', tint: '#b8912f', layout: 'refractor', themeId: 'birthday' },
     ];
   }, []);
   const ready = photos.length > 0 && !checking && held;
@@ -188,8 +190,6 @@ export default function App() {
    * Swapping the stage on the click made the whole page blink.
    */
   const openMaker = useCallback(() => {
-    // Sealed on the way out of the box; the glass lifts once it has landed.
-    setEncased(true);
     setLeaving(true);
     setPulling(true);
     window.setTimeout(() => {
@@ -211,7 +211,6 @@ export default function App() {
           setReplyTo(name);
           setReceived(null);
           setStage('make');
-          setEncased(false);
           clearLocation();
         }}
       />
@@ -230,19 +229,23 @@ export default function App() {
             <CardStack
               entries={showcase}
               onAngle={onAngle}
-              live={() => (
-                <TradingCard
-                  ref={cardRef}
-                  photos={images}
-                  theme={cardTheme}
-                  copy={copy}
-                  layout="fullart"
-                  lenticules={settings.lenticules}
-                  parallax={settings.parallax}
-                  blend={settings.blend}
-                  sheen={settings.sheen}
-                />
-              )}
+              render={(entry, isLive) => {
+                const entryTheme = findTheme(entry.themeId);
+                return (
+                  <TradingCard
+                    ref={isLive ? cardRef : undefined}
+                    photos={images}
+                    still={isLive ? undefined : entry.still}
+                    theme={entryTheme}
+                    copy={copyFor(entryTheme)}
+                    layout={entry.layout}
+                    lenticules={settings.lenticules}
+                    parallax={settings.parallax}
+                    blend={settings.blend}
+                    sheen={settings.sheen}
+                  />
+                );
+              }}
             />
           </div>
         )}
@@ -259,10 +262,7 @@ export default function App() {
               initial={{ y: 0, opacity: 1 }}
               animate={{ y: '52%', opacity: 0 }}
               transition={{ delay: 0.3, duration: 0.52, ease: EASE }}
-              onAnimationComplete={() => {
-                setPulling(false);
-                setEncased(false);
-              }}
+              onAnimationComplete={() => setPulling(false)}
             />
           )}
           <motion.div
@@ -272,7 +272,7 @@ export default function App() {
             transition={{ type: 'spring', stiffness: 116, damping: 19, mass: 0.9 }}
           >
           <Slab
-            encased={encased}
+            encased
             label={copy.title}
             sublabel={`${cardTheme.label.toUpperCase()} · LENTICARD`}
             serial={serial}
@@ -579,13 +579,7 @@ export default function App() {
               <button
                 className="btn"
                 onClick={() => {
-                  if (stage === 'send') {
-                    setStage('make');
-                    setEncased(false);
-                  } else {
-                    setStage('home');
-                    setEncased(true);
-                  }
+                  setStage(stage === 'send' ? 'make' : 'home');
                 }}
               >
                 <ArrowLeft size={15} weight="light" />
@@ -595,10 +589,7 @@ export default function App() {
                 <button
                   className="btn btn-white btn-wide"
                   disabled={photos.length < 2}
-                  onClick={() => {
-                    setEncased(true);
-                    setStage('send');
-                  }}
+                  onClick={() => setStage('send')}
                 >
                   <PaperPlaneTilt size={16} weight="bold" />
                   Seal and send

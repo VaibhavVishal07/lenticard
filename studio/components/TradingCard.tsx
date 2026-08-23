@@ -4,6 +4,9 @@ import type { CardCopy, CardLayout, CardTheme } from '../lib/themes';
 
 interface TradingCardProps {
   photos: string[];
+  /** A flat image instead of the lens. The column runs four templates at
+      once and browsers cap live WebGL contexts, so only the held one is real. */
+  still?: string;
   theme: CardTheme;
   copy: CardCopy;
   layout: CardLayout;
@@ -31,11 +34,14 @@ interface TradingCardProps {
  */
 export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
   function TradingCard(
-    { photos, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
+    { photos, still, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
     ref,
   ) {
     const art = (fill: boolean): ReactNode => (
       <div className="tc-art" data-fill={fill}>
+        {still ? (
+          <img className="tc-still" src={still} alt="" loading="lazy" />
+        ) : (
         <LenticularCard
           ref={ref}
           images={photos}
@@ -56,6 +62,7 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           fit="cover"
           onError={onError}
         />
+        )}
         <span className="tc-gloss" aria-hidden />
         <span className="tc-grain" aria-hidden />
       </div>
@@ -79,10 +86,6 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
             {art(true)}
             <span className="tc-vign" aria-hidden />
             <span className="tc-hair" aria-hidden />
-            <div className="tc-fa-foot">
-              <h2 className="tc-name">{copy.title}</h2>
-              <span className="tc-eyebrow">{copy.stage}</span>
-            </div>
           </div>
         )}
 
