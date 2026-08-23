@@ -162,13 +162,54 @@ export function copyFor(theme: CardTheme): CardCopy {
   };
 }
 
-// ------------------------------------------------------------------ layouts
+// ---------------------------------------------------------------- templates
 
-export type CardLayout = 'trading' | 'full' | 'instant' | 'minimal';
+export type CardLayout = 'classic' | 'kaboom' | 'prism' | 'retro' | 'museum';
 
-export const LAYOUTS: Array<{ id: CardLayout; label: string; hint: string }> = [
-  { id: 'trading', label: 'Trading card', hint: 'Full anatomy: plate, moves, strip, flavour, footer' },
-  { id: 'full', label: 'Full art', hint: 'Art to the edges, name over the foot' },
-  { id: 'instant', label: 'Instant photo', hint: 'White border and a wide caption margin' },
-  { id: 'minimal', label: 'Minimal', hint: 'Thin frame, name only' },
+export interface Template {
+  id: CardLayout;
+  label: string;
+  hint: string;
+  /** Two colours for the picker's miniature, so the strip reads at a glance. */
+  swatch: [string, string];
+}
+
+/**
+ * Five templates that are actually different objects, not one card with its
+ * palette swapped: where the art sits, whether there is a border at all, where
+ * the name goes, and what the frame is made of all change.
+ */
+export const TEMPLATES: Template[] = [
+  {
+    id: 'classic',
+    label: 'Classic',
+    hint: 'Silver bevel, name plate under the art, stat strip along the foot',
+    swatch: ['#d9dde3', '#8b929c'],
+  },
+  {
+    id: 'kaboom',
+    label: 'Kaboom',
+    hint: 'Art to the edges, a wordmark over it, chrome name in the corner',
+    swatch: ['#ff3b30', '#ffcc00'],
+  },
+  {
+    id: 'prism',
+    label: 'Prism',
+    hint: 'Angular cut panels on a dark board, one neon rule',
+    swatch: ['#0e1116', '#c6ff2e'],
+  },
+  {
+    id: 'retro',
+    label: 'Retro',
+    hint: 'Thick colour border, rounded inner frame, banner name',
+    swatch: ['#e8483c', '#2b6fd1'],
+  },
+  {
+    id: 'museum',
+    label: 'Museum',
+    hint: 'White stock, hairline rule, small caps, nothing else',
+    swatch: ['#f6f5f1', '#c9c6bd'],
+  },
 ];
+
+export const DEFAULT_TEMPLATE = TEMPLATES[0];

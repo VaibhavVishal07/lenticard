@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, type ReactNode } from 'react';
 import { LenticularCard, type LenticularCardHandle } from '../../src/react/LenticularCard';
 import type { CardCopy, CardLayout, CardTheme } from '../lib/themes';
 
@@ -15,29 +15,29 @@ interface TradingCardProps {
 }
 
 /**
- * The card, laid out the way a real one is: name plate with a stage line and a
- * value at the top right, illustration window, numbered move rows with energy
- * costs, a weakness / resistance / retreat strip, flavour text, and a footer
- * carrying the illustrator credit, set, number and rarity.
+ * The card.
  *
- * Only the illustration is lenticular. Everything printed is DOM sitting on top
- * of the canvas, because text pushed through the shader is text nobody can
- * read — the lens refracts every ridge a little, and a name smeared across
- * sixty of them stops being a word. Keeping the printing out of the interlace
- * also leaves it selectable, sharp at any size, and out of the share link.
+ * Only the illustration goes through the lens. Every printed element is DOM on
+ * top of the canvas, because text pushed through a lens array is text nobody
+ * can read — the lens refracts each ridge a little, and a name smeared across
+ * sixty of them stops being a word.
+ *
+ * The five templates are different objects rather than one card recoloured:
+ * the frame material, where the art sits, whether there is a border at all and
+ * where the name goes all change between them.
  */
 export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
   function TradingCard(
     { photos, theme, copy, layout, lenticules, parallax, blend, sheen, onError },
     ref,
   ) {
-    const art = (
-      <div className="tc-art">
+    const art = (fill: boolean): ReactNode => (
+      <div className="tc-art" data-fill={fill}>
         <LenticularCard
           ref={ref}
           images={photos}
           axis="vertical"
-          orientation={layout === 'trading' ? 'landscape' : 'portrait'}
+          orientation={fill ? 'portrait' : 'landscape'}
           lenticules={lenticules}
           parallax={parallax}
           blend={blend}
@@ -47,112 +47,123 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           motion="none"
           tilt={0}
           float={0}
-          radius={layout === 'full' ? 0 : 4}
+          radius={0}
           fit="cover"
           onError={onError}
         />
-        <span className="tc-frames">{photos.length}-FRAME</span>
       </div>
-    );
-
-    const plate = (
-      <header className="tc-plate">
-        <div className="tc-names">
-          <span className="tc-stage">{copy.stage}</span>
-          <h2 className="tc-title">{copy.title}</h2>
-        </div>
-        <div className="tc-stat">
-          <span className="tc-stat-label">{copy.statLabel}</span>
-          <span className="tc-stat-value">{copy.statValue}</span>
-          <span className="tc-type" aria-hidden>{theme.glyph}</span>
-        </div>
-      </header>
     );
 
     return (
       <article
         className="tc"
-        data-layout={layout}
+        data-tpl={layout}
         style={{
-          ['--tc-a' as string]: theme.plate[0],
-          ['--tc-b' as string]: theme.plate[1],
-          ['--tc-board' as string]: theme.board,
-          ['--tc-ink' as string]: theme.ink,
-          ['--tc-accent' as string]: theme.accent,
+          ['--a' as string]: theme.plate[0],
+          ['--b' as string]: theme.plate[1],
+          ['--board' as string]: theme.board,
+          ['--ink' as string]: theme.ink,
+          ['--accent' as string]: theme.accent,
         }}
       >
-        <div className="tc-board">
-          {layout === 'trading' && (
-            <>
-              {plate}
-              {art}
-              <div className="tc-moves">
-                {copy.moves.map((move, i) => (
-                  <div className="tc-move" key={i}>
-                    <span className="tc-cost" aria-label={`${move.cost} energy`}>
-                      {Array.from({ length: move.cost }, (_, p) => (
-                        <span className="tc-pip" key={p} />
-                      ))}
-                    </span>
-                    <span className="tc-move-body">
-                      <span className="tc-move-name">{move.name}</span>
-                      <span className="tc-move-text">{move.text}</span>
-                    </span>
-                    <span className="tc-move-value">{move.value}</span>
-                  </div>
-                ))}
+        {layout === 'classic' && (
+          <div className="tc-body">
+            <div className="tc-bevel">
+              {art(false)}
+              <div className="tc-plate">
+                <span className="tc-eyebrow">{copy.stage}</span>
+                <h2 className="tc-name">{copy.title}</h2>
               </div>
-              <div className="tc-strip">
-                {['Weakness', 'Resists', 'Retreat'].map((label, i) => (
-                  <div className="tc-strip-cell" key={label}>
-                    <span className="tc-strip-label">{label}</span>
-                    <span className="tc-strip-value">{copy.strip[i]}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="tc-flavour">{copy.flavour}</p>
-              <footer className="tc-foot">
-                <span>illus. you</span>
-                <span className="tc-foot-right">
-                  <span className="tc-set">{theme.set}</span>
-                  <span className="tc-rarity">{theme.rarity}</span>
+            </div>
+            <div className="tc-rows">
+              {copy.moves.map((m, i) => (
+                <div className="tc-row" key={i}>
+                  <span className="tc-pips">
+                    {Array.from({ length: m.cost }, (_, p) => <i key={p} />)}
+                  </span>
+                  <span className="tc-row-name">{m.name}</span>
+                  <span className="tc-row-val">{m.value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="tc-strip">
+              {['WEAK', 'RESIST', 'RETREAT'].map((k, i) => (
+                <span key={k}>
+                  <b>{k}</b>
+                  {copy.strip[i]}
                 </span>
-              </footer>
-            </>
-          )}
+              ))}
+            </div>
+            <div className="tc-foot">
+              <span>{theme.set}</span>
+              <span>
+                {copy.statLabel} {copy.statValue} · {theme.rarity}
+              </span>
+            </div>
+          </div>
+        )}
 
-          {layout === 'full' && (
-            <>
-              {art}
-              <div className="tc-overlay">
-                <span className="tc-stage">{copy.stage}</span>
-                <h2 className="tc-title">{copy.title}</h2>
-                <span className="tc-badge">{theme.badge}</span>
+        {layout === 'kaboom' && (
+          <div className="tc-body">
+            {art(true)}
+            <span className="tc-shout" aria-hidden>{theme.badge}</span>
+            <span className="tc-rc">{copy.statValue}</span>
+            <div className="tc-chrome">
+              <span className="tc-chrome-sm">{copy.stage.split('·')[0].trim()}</span>
+              <h2 className="tc-chrome-name">{copy.title}</h2>
+            </div>
+          </div>
+        )}
+
+        {layout === 'prism' && (
+          <div className="tc-body">
+            <div className="tc-cut">{art(false)}</div>
+            <div className="tc-neon" />
+            <div className="tc-prism-foot">
+              <h2 className="tc-name">{copy.title}</h2>
+              <span className="tc-eyebrow">{theme.badge}</span>
+              <div className="tc-rows">
+                {copy.moves.map((m, i) => (
+                  <div className="tc-row" key={i}>
+                    <span className="tc-row-name">{m.name}</span>
+                    <span className="tc-row-val">{m.value}</span>
+                  </div>
+                ))}
               </div>
-            </>
-          )}
+            </div>
+          </div>
+        )}
 
-          {layout === 'instant' && (
-            <>
-              {art}
-              <div className="tc-caption">
-                <h2 className="tc-title">{copy.title}</h2>
-                <p className="tc-flavour">{copy.flavour}</p>
-                <span className="tc-badge">{theme.label}</span>
+        {layout === 'retro' && (
+          <div className="tc-body">
+            <div className="tc-inner">
+              {art(false)}
+              <div className="tc-banner">
+                <h2 className="tc-name">{copy.title}</h2>
               </div>
-            </>
-          )}
+              <div className="tc-retro-foot">
+                <span className="tc-eyebrow">{theme.set}</span>
+                <span className="tc-eyebrow">
+                  {copy.statLabel} {copy.statValue}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
-          {layout === 'minimal' && (
-            <>
-              {art}
-              <footer className="tc-min">
-                <h2 className="tc-title">{copy.title}</h2>
-                <span className="tc-badge">{theme.badge}</span>
-              </footer>
-            </>
-          )}
-        </div>
+        {layout === 'museum' && (
+          <div className="tc-body">
+            {art(false)}
+            <div className="tc-museum">
+              <h2 className="tc-name">{copy.title}</h2>
+              <p className="tc-flavour">{copy.flavour}</p>
+              <span className="tc-rule" />
+              <span className="tc-eyebrow">
+                {theme.set} · {theme.rarity}
+              </span>
+            </div>
+          </div>
+        )}
       </article>
     );
   },

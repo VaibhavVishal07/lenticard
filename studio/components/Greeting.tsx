@@ -74,7 +74,7 @@ export function Greeting({ payload, onMakeOne }: GreetingProps) {
               photos={frames}
               theme={cardTheme}
               copy={cardCopy}
-              layout="trading"
+              layout={(meta.layout as never) ?? "classic"}
               lenticules={meta.settings.lenticules ?? 62}
               parallax={meta.settings.parallax ?? 1.15}
               blend={meta.settings.blend ?? 0.14}

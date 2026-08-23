@@ -6,51 +6,60 @@ const EASE = [0.32, 0.72, 0, 1] as const;
 export type CaseTexture = 'clear' | 'frosted' | 'carbon' | 'holo';
 
 export const CASE_TEXTURES: Array<{ id: CaseTexture; label: string }> = [
-  { id: 'clear', label: 'Clear' },
+  { id: 'clear', label: 'Gloss' },
   { id: 'frosted', label: 'Frosted' },
-  { id: 'carbon', label: 'Carbon' },
-  { id: 'holo', label: 'Holo' },
+  { id: 'carbon', label: 'Textured' },
+  { id: 'holo', label: 'Holo edge' },
 ];
 
-/** Label stock. Deep enough that the printed text stays readable on it. */
+/**
+ * The stripe down the label. The label itself stays white on every one of
+ * these, because a grading label is a document and documents are read.
+ */
 export const CASE_TINTS = [
-  { id: 'bone', label: 'Bone', value: '#e9eae4' },
-  { id: 'rose', label: 'Rose', value: '#f0b7c6' },
-  { id: 'gold', label: 'Gold', value: '#e8c877' },
-  { id: 'mint', label: 'Mint', value: '#a9dfc9' },
-  { id: 'ice', label: 'Ice', value: '#b6cbe8' },
-  { id: 'slate', label: 'Slate', value: '#4c5260' },
+  { id: 'red', label: 'Red', value: '#d5352b' },
+  { id: 'ink', label: 'Ink', value: '#1b1d22' },
+  { id: 'gold', label: 'Gold', value: '#b8912f' },
+  { id: 'green', label: 'Green', value: '#1c7a4f' },
+  { id: 'blue', label: 'Blue', value: '#2657b8' },
+  { id: 'violet', label: 'Violet', value: '#6b3fc4' },
 ];
 
 interface SlabProps {
   encased: boolean;
+  /** The card's name, printed as the middle line of the label. */
   label?: string;
+  /** The set line above the name. */
   sublabel?: string;
   serial?: string;
   tint?: string;
   texture?: CaseTexture;
   grade?: string;
-  /** Viewing angle, -1..1 on each axis. The caller feeds this to the card. */
   onAngle?: (x: number, y: number) => void;
   children: ReactNode;
 }
 
+/** Fixed-looking but deterministic bar widths, so the barcode never reflows. */
+const BARS = [3, 1, 2, 1, 1, 3, 2, 1, 3, 1, 1, 2, 3, 1, 2, 2, 1, 3, 1, 1, 2, 3, 1, 2, 1, 3, 2, 1];
+
 /**
- * The case, as an actual object.
+ * A graded holder.
  *
- * Depth is the whole point, so it is built as separated layers in 3D rather
- * than a panel with a gradient on it: a dark backing plate, the shell and its
- * printed label, the card, and the front sheet of acrylic — each at its own Z.
- * Rotating the assembly slides those layers against each other, and that
- * parallax is what reads as thickness. Nothing rotates on its own; the whole
- * thing turns together, the way a slab does when you tilt it in your hand.
+ * Built from a real one: a black acrylic shell with stepped ledges, a recessed
+ * tray holding a white label, and the card suspended in a well below it. The
+ * label carries what a grader's label carries — set line, name, number, a large
+ * grade, the sub-grades, a cert number and a barcode — because that is the part
+ * people actually read, and it is white for the same reason.
+ *
+ * Depth is real: the backing plate, shell, card and front sheet each sit at
+ * their own Z, so rotating the assembly slides them against each other.
  */
 export function Slab({
   encased,
   label = 'Lenticular',
-  sublabel,
-  serial,
-  tint = '#e9eae4',
+  sublabel = 'LENTICARD',
+  serial = 'LC-0000000',
+  tint = '#d5352b',
   texture = 'clear',
   grade = '10',
   onAngle,
@@ -60,11 +69,10 @@ export function Slab({
   const px = useMotionValue(0);
   const py = useMotionValue(0);
 
-  const spring = { stiffness: 140, damping: 20, mass: 0.6 };
-  const rotateY = useSpring(useTransform(px, [-1, 1], [-17, 17]), spring);
-  const rotateX = useSpring(useTransform(py, [-1, 1], [13, -13]), spring);
-  const shine = useTransform(px, [-1, 1], ['18%', '82%']);
-  const lift = useSpring(useTransform(py, [-1, 1], [10, -10]), spring);
+  const spring = { stiffness: 150, damping: 21, mass: 0.6 };
+  const rotateY = useSpring(useTransform(px, [-1, 1], [-16, 16]), spring);
+  const rotateX = useSpring(useTransform(py, [-1, 1], [12, -12]), spring);
+  const shine = useTransform(px, [-1, 1], ['16%', '84%']);
 
   const track = useCallback(
     (event: PointerEvent) => {
@@ -74,11 +82,9 @@ export function Slab({
       if (!rect.width || !rect.height) return;
       const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       const y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
-      // Beyond the case the angle keeps reading, just gently, so the card is
-      // alive whenever the pointer is anywhere near it.
-      const clamp = (v: number) => Math.max(-1.4, Math.min(1.4, v));
-      px.set(clamp(x));
-      py.set(clamp(y));
+      const hold = (v: number) => Math.max(-1.3, Math.min(1.3, v));
+      px.set(hold(x));
+      py.set(hold(y));
       onAngle?.(Math.max(-1, Math.min(1, x)), Math.max(-1, Math.min(1, y)));
     },
     [px, py, onAngle],
@@ -101,44 +107,70 @@ export function Slab({
   return (
     <div className="rig" ref={rig}>
       <motion.div
-        className="slab3d"
+        className="slab"
         data-encased={encased}
         data-texture={texture}
-        style={{ rotateX, rotateY, y: lift, ['--tint' as string]: tint }}
+        style={{ rotateX, rotateY, ['--tint' as string]: tint }}
       >
-        {/* Backing plate, furthest from the eye. */}
         <div className="slab-back" />
 
-        {/* The shell and its printed label. */}
-        <div className="slab-body">
-          <div className="slab-label">
-            <div className="slab-id">
-              <span className="slab-brand">
-                <span className="slab-chip" />
-                LENTICARD
-              </span>
-              <span className="slab-title">{label}</span>
-              {sublabel && <span className="slab-sub">{sublabel}</span>}
-            </div>
-            <div className="slab-grade">
-              <span className="slab-grade-w">GEM MINT</span>
-              <span className="slab-grade-n">{grade}</span>
+        <div className="slab-shell">
+          {/* The recessed tray the label sits in. */}
+          <div className="lab-tray">
+            <div className="lab">
+              <div className="lab-main">
+                <div className="lab-left">
+                  <span className="lab-set">{sublabel}</span>
+                  <span className="lab-name">{label}</span>
+                  <span className="lab-num">LENTICULAR · 3 FRAME</span>
+                </div>
+                <div className="lab-grade">
+                  <span className="lab-grade-w">GEM MINT</span>
+                  <span className="lab-grade-n">{grade}</span>
+                </div>
+              </div>
+
+              <div className="lab-sub">
+                {[
+                  ['CENTERING', '10'],
+                  ['CORNERS', '10'],
+                  ['EDGES', '10'],
+                  ['SURFACE', '10'],
+                ].map(([k, v]) => (
+                  <span className="lab-cell" key={k}>
+                    <span className="lab-cell-k">{k}</span>
+                    <span className="lab-cell-v">{v}</span>
+                  </span>
+                ))}
+              </div>
+
+              <div className="lab-foot">
+                <span className="lab-bars" aria-hidden>
+                  {BARS.map((w, i) => (
+                    <i key={i} style={{ width: `${w}px` }} />
+                  ))}
+                </span>
+                <span className="lab-cert">{serial}</span>
+              </div>
             </div>
           </div>
-          <div className="slab-well" />
-          {serial && <div className="slab-serial">{serial}</div>}
+
+          {/* The ledge between label and card, and the well itself. */}
+          <div className="slab-ledge" />
+          <div className="slab-well">
+            <span className="slab-tab" aria-hidden />
+          </div>
         </div>
 
-        {/* The card, floating inside the acrylic. */}
         <motion.div
           className="slab-card"
           animate={
             encased
-              ? { y: '0%', scale: 1, z: 10, rotateZ: 0, opacity: 1 }
-              : { y: ['0%', '-62%', '-6%'], scale: [1, 1.06, 1.22], z: 90, rotateZ: [0, -3.5, 0] }
+              ? { y: '0%', scale: 1, z: 14, rotateZ: 0 }
+              : { y: ['0%', '-58%', '-8%'], scale: [1, 1.04, 1.24], z: 110, rotateZ: [0, -3, 0] }
           }
           transition={{
-            duration: encased ? 0.7 : 1.05,
+            duration: encased ? 0.72 : 1.1,
             times: encased ? undefined : [0, 0.55, 1],
             ease: EASE,
           }}
@@ -146,10 +178,8 @@ export function Slab({
           {children}
         </motion.div>
 
-        {/* Front sheet of acrylic: the only layer that carries a hard specular. */}
         <motion.div className="slab-glass" style={{ ['--shine' as string]: shine }} />
 
-        {/* The four cut edges, which is what actually says "thick". */}
         <span className="slab-edge slab-edge-t" />
         <span className="slab-edge slab-edge-b" />
         <span className="slab-edge slab-edge-l" />
