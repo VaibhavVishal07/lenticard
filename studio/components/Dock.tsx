@@ -16,6 +16,7 @@ interface DockProps {
  */
 export function Dock({ theme, onTheme, children }: DockProps) {
   return (
+    <div className="dock-rail">
     <motion.div
       className="dock"
       initial={{ opacity: 0, y: 24 }}
@@ -43,5 +44,6 @@ export function Dock({ theme, onTheme, children }: DockProps) {
         )}
       </button>
     </motion.div>
+    </div>
   );
 }

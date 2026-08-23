@@ -180,6 +180,13 @@ export function createLenticularCard(
     // costs more than twice the fill rate.
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     engine.resize(width, height, dpr);
+    // The printed-ridge overlay is a CSS gradient, so it only lines up with the
+    // shader's ridges if it is told how wide one actually is.
+    const along = axis === 'vertical' ? width : height;
+    root.style.setProperty(
+      '--lc-ridge-pitch',
+      `${Math.max(2, along / Math.max(config.lenticules, 1)).toFixed(2)}px`,
+    );
     idleFrames = 0;
   }
 

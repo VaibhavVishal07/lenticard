@@ -7,16 +7,18 @@ export type CardSettings = Pick<
 >;
 
 /**
- * Tuned for an obvious flip rather than a tasteful one. A near-zero blend makes
- * the frames cut rather than dissolve, which is what a real lenticular card
- * does and what makes the effect legible on a first glance.
+ * Tuned so the card looks lenticular while it is standing still, not only while
+ * it moves. The high interlace is what does that: each ridge reveals nearly
+ * half the frame stack, so neighbouring frames are always woven into the
+ * picture the way they are on a printed sheet. Coarse ridges keep the weave
+ * visible at arm's length, and a low blend keeps each strip a clean cut.
  */
 export const INITIAL: CardSettings = {
   orientation: 'auto',
-  lenticules: 84,
-  parallax: 1.45,
-  blend: 0.08,
-  sheen: 0.5,
+  lenticules: 62,
+  parallax: 1.15,
+  blend: 0.14,
+  sheen: 0.62,
   motion: 'pointer',
 };
 
@@ -31,8 +33,8 @@ export function diffFromDefaults(settings: CardSettings): Partial<CardSettings> 
 
 /** The lens settings the card is always built with, whatever the user picks. */
 export const FIXED = {
-  interlace: 0.2,
-  lens: 0.55,
+  interlace: 0.46,
+  lens: 0.72,
   tilt: 15,
   float: 9,
   radius: 20,

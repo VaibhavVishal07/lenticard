@@ -35,11 +35,12 @@ export function resolveOrientation(
 }
 
 /**
- * Ridges run across the card's long axis, so the sweep that reveals the frames
- * is the one with the most room to travel. Square cards default to vertical
- * ridges, which is what an actual lenticular print uses.
+ * Vertical ridges, whatever the shape. A printed lenticular card is held in a
+ * hand and turned side to side, so the lenticules run down it and the picture
+ * changes left to right. Deriving the axis from the card's proportions read as
+ * clever and produced portrait cards that only flipped when you nodded at them.
+ * Pass 'horizontal' explicitly if you want that.
  */
-export function resolveAxis(option: AxisOption, orientation: Orientation): Axis {
-  if (option !== 'auto') return option;
-  return orientation === 'portrait' ? 'horizontal' : 'vertical';
+export function resolveAxis(option: AxisOption, _orientation: Orientation): Axis {
+  return option === 'auto' ? 'vertical' : option;
 }

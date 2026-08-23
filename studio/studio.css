@@ -11,6 +11,18 @@
   initial-value: 0%;
 }
 
+/* Registered so the wash can use them inside calc() as plain numbers. */
+@property --px {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --py {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 :root {
   --font: 'Satoshi', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
@@ -67,6 +79,43 @@
 
 * { box-sizing: border-box; }
 
+/* The room picks up a trace of what the card is doing. Two washes, cyan and
+   magenta, drift against each other as the pointer moves — barely there, but
+   enough that the page feels lit by the object rather than behind it. */
+.wash {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--wash-on, 0);
+  transition: opacity 900ms var(--ease);
+  background:
+    radial-gradient(
+      46% 40% at calc(50% + var(--px, 0) * 32%) calc(46% + var(--py, 0) * 26%),
+      rgba(92, 225, 255, 0.075),
+      transparent 70%
+    ),
+    radial-gradient(
+      42% 38% at calc(50% - var(--px, 0) * 30%) calc(56% - var(--py, 0) * 22%),
+      rgba(255, 94, 207, 0.06),
+      transparent 72%
+    );
+}
+
+:root[data-theme='light'] .wash {
+  background:
+    radial-gradient(
+      46% 40% at calc(50% + var(--px, 0) * 32%) calc(46% + var(--py, 0) * 26%),
+      rgba(0, 140, 190, 0.07),
+      transparent 70%
+    ),
+    radial-gradient(
+      42% 38% at calc(50% - var(--px, 0) * 30%) calc(56% - var(--py, 0) * 22%),
+      rgba(190, 0, 130, 0.05),
+      transparent 72%
+    );
+}
+
 body {
   margin: 0;
   min-height: 100dvh;
@@ -88,6 +137,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
    ========================================================================= */
 
 .stage {
+  position: relative;
+  z-index: 1;
   min-height: 100dvh;
   display: grid;
   align-content: center;
@@ -221,17 +272,27 @@ button, input, select, textarea { font: inherit; color: inherit; }
    Dock — the only navigation, and it sits at the bottom
    ========================================================================= */
 
-.dock {
+/* The rail owns the centring; the dock owns its own transform, so Motion
+   animating y cannot knock it off centre. */
+.dock-rail {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 1.5rem;
-  transform: translateX(-50%);
   z-index: var(--z-dock);
   display: flex;
+  justify-content: center;
+  padding-inline: 0.75rem;
+  pointer-events: none;
+}
+
+.dock {
+  pointer-events: auto;
+  display: flex;
   align-items: center;
-  gap: 0.55rem;
-  max-width: calc(100vw - 1.5rem);
-  padding: 0.4rem 0.5rem 0.4rem 1rem;
+  gap: 0.7rem;
+  max-width: 100%;
+  padding: 0.55rem 0.65rem 0.55rem 1.25rem;
   border-radius: 999px;
   background: var(--glass);
   backdrop-filter: blur(26px) saturate(180%);
@@ -240,8 +301,16 @@ button, input, select, textarea { font: inherit; color: inherit; }
   box-shadow: var(--edge), var(--cast);
 }
 
-.dock-sep { width: 1px; height: 20px; background: var(--hair); }
-.dock-actions { display: flex; align-items: center; gap: 0.4rem; }
+.dock-sep { width: 1px; height: 24px; background: var(--hair); }
+.dock-actions { display: flex; align-items: center; gap: 0.5rem; }
+
+/* The dock is the only navigation, so it carries a little more weight. */
+.dock .mark { font-size: 1.0625rem; }
+.dock .mark-chip { width: 26px; height: 19px; border-radius: 5px; }
+.dock .btn { padding: 0.62rem 1.1rem; font-size: 0.875rem; }
+.dock .btn-holo { padding-right: 0.5rem; }
+.dock .btn-well { width: 1.7rem; height: 1.7rem; }
+.dock .icon-btn { width: 2.3rem; height: 2.3rem; }
 
 /* =========================================================================
    Buttons
@@ -666,15 +735,254 @@ textarea.text-input { resize: vertical; min-height: 3.2rem; font-family: inherit
    ========================================================================= */
 
 @media (max-width: 560px) {
-  .stage { padding: 3rem var(--gutter) 8.5rem; }
+  .stage { padding: 3rem var(--gutter) 9rem; }
   .card-slot { width: min(290px, 72vw); }
-  .dock {
-    left: 0.75rem;
-    right: 0.75rem;
-    transform: none;
-    max-width: none;
-    justify-content: space-between;
-  }
+  .dock { width: 100%; justify-content: space-between; padding-left: 1rem; }
+  .dock .mark span:last-child { display: none; }
   .gift-names { grid-template-columns: minmax(0, 1fr); }
   .greeting-actions .btn { width: 100%; justify-content: center; }
+}
+
+/* =========================================================================
+   The case
+   A graded-card slab: acrylic shell, a printed label across the top, the card
+   recessed in a well. The shell is a sibling of the card, not its parent, so
+   the card can rise out of it without ever unmounting.
+   ========================================================================= */
+
+.card-slot, .greeting-card { container-type: inline-size; }
+
+.encase {
+  position: relative;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 21% 8% 9%;
+  transition: padding 620ms var(--ease);
+}
+.encase[data-encased='false'] { padding: 6% 0 0; }
+
+.slab {
+  position: absolute;
+  inset: 0;
+  border-radius: 1.5rem;
+  background: linear-gradient(
+    168deg,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.03) 30%,
+    rgba(255, 255, 255, 0.02) 70%,
+    rgba(255, 255, 255, 0.1)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 44px 90px -44px rgba(0, 0, 0, 0.95);
+  overflow: hidden;
+}
+
+/* Textures: what the acrylic is doing, not what colour it is. */
+.slab[data-texture='frosted'] {
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  background: linear-gradient(168deg, rgba(255,255,255,.2), rgba(255,255,255,.07) 55%, rgba(255,255,255,.14));
+}
+.slab[data-texture='carbon']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,.16) 0 2px, transparent 2px 5px);
+}
+.slab[data-texture='holo']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.24;
+  background: var(--holo);
+  background-size: 240% 100%;
+  mix-blend-mode: color-dodge;
+  animation: holo-drift-x 9s linear infinite;
+}
+
+/* The printed label. Sized in container units so it stays readable at any
+   card width — this is the part people actually read. */
+.slab-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 19%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4cqw;
+  padding: 0 4.5cqw;
+  background: linear-gradient(180deg,
+    color-mix(in oklab, var(--tint) 92%, #fff),
+    var(--tint));
+  color: #14161a;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.32);
+}
+
+/* Slate is dark stock, so its printing flips to light. */
+.slab[style*='#4c5260'] .slab-label { color: #f4f6fa; }
+.slab[style*='#4c5260'] .slab-sub { color: rgba(244, 246, 250, 0.7); }
+.slab[style*='#4c5260'] .slab-grade-w { color: rgba(244, 246, 250, 0.66); }
+
+.slab-id { display: grid; gap: 0.35cqw; min-width: 0; }
+
+.slab-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.2cqw;
+  font-size: 2.6cqw;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.slab-chip {
+  width: 4.4cqw;
+  height: 3.1cqw;
+  border-radius: 1px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0 1px, transparent 1px 3px),
+    var(--holo);
+  background-size: auto, 260% 100%;
+}
+
+.slab-title {
+  font-size: 5.2cqw;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slab-sub {
+  font-size: 2.5cqw;
+  letter-spacing: 0.04em;
+  color: rgba(20, 22, 26, 0.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slab-grade { display: grid; justify-items: end; gap: 0.2cqw; flex-shrink: 0; }
+.slab-grade-w { font-size: 2.1cqw; font-weight: 800; letter-spacing: 0.14em; color: rgba(20,22,26,.6); }
+.slab-grade-n { font-size: 8.2cqw; font-weight: 900; letter-spacing: -0.05em; line-height: 0.9; }
+
+/* The recess the card sits in. */
+.slab-well {
+  position: absolute;
+  inset: 19% 6% 8%;
+  border-radius: 0.5rem;
+  box-shadow:
+    inset 0 2px 7px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+.slab-serial {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2.2%;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 2.2cqw;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* One hard specular streak, so it reads as acrylic and not as a border. */
+.slab-gloss {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    104deg,
+    transparent 12%,
+    rgba(255, 255, 255, 0.18) 25%,
+    rgba(255, 255, 255, 0.04) 33%,
+    transparent 45%
+  );
+}
+
+.encase-card { position: relative; z-index: 2; width: 100%; }
+.encase[data-encased='true'] .encase-card { width: 88%; }
+
+/* =========================================================================
+   Greeting layout
+   ========================================================================= */
+
+.greeting-inner {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1.25rem;
+  width: min(400px, 100%);
+}
+.greeting-copy { display: grid; justify-items: center; gap: 0.9rem; }
+
+/* =========================================================================
+   Sampler and maker controls
+   ========================================================================= */
+
+.sampler { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center; margin-top: 0.4rem; }
+
+.sample {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background: var(--glass-2);
+  color: var(--ink-2);
+  font-size: 0.78125rem;
+  cursor: pointer;
+  transition: color 300ms var(--ease), border-color 300ms var(--ease), background 300ms var(--ease);
+}
+.sample:hover { color: var(--ink); border-color: var(--hair-2); }
+.sample[aria-pressed='true'] {
+  color: var(--ink);
+  border-color: color-mix(in oklab, var(--sample) 60%, transparent);
+  background: color-mix(in oklab, var(--sample) 15%, transparent);
+}
+.sample-glyph { color: var(--sample); font-size: 0.875rem; line-height: 1; }
+
+.attr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+.attr-grid .field { gap: 0.3rem; }
+
+.case-panel {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.8rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--hair);
+  background: var(--glass-2);
+}
+
+.swatches { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.swatch {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--hair-2);
+  background: var(--sw);
+  cursor: pointer;
+  transition: transform 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+.swatch:hover { transform: scale(1.08); }
+.swatch[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--sw);
+}
+
+@media (max-width: 460px) {
+  .attr-grid { grid-template-columns: minmax(0, 1fr); }
 }
