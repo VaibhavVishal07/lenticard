@@ -169,6 +169,10 @@ export default function App() {
       { id: 's2', still: base + 'cards/astra-2.jpg', name: 'Yours, Obviously', set: 'HEARTLAND', tint: '#d5352b', layout: 'rookie', themeId: 'valentine' },
       { id: 's3', still: base + 'cards/astra-3.jpg', name: 'Called It', set: 'FIRST PRINT', tint: '#1b1d22', layout: 'chrome', themeId: 'congrats' },
       { id: 's4', still: base + 'cards/astra-1.jpg', name: 'Thirty, Somehow', set: 'ANOTHER YEAR', tint: '#b8912f', layout: 'refractor', themeId: 'birthday' },
+      { id: 's5', still: base + 'cards/astra-2.jpg', name: 'Picks Up At 3am', set: 'LONG HAUL', tint: '#1c7a4f', layout: 'rookie', themeId: 'friend' },
+      { id: 's6', still: base + 'cards/astra-3.jpg', name: 'Second Slice', set: 'ANOTHER YEAR', tint: '#6b3fc4', layout: 'fullart', themeId: 'birthday' },
+      { id: 's7', still: base + 'cards/astra-1.jpg', name: 'Spare Keys', set: 'LONG HAUL', tint: '#1b1d22', layout: 'refractor', themeId: 'friend' },
+      { id: 's8', still: base + 'cards/astra-2.jpg', name: 'Took The Room', set: 'FIRST PRINT', tint: '#d5352b', layout: 'chrome', themeId: 'valentine' },
     ];
   }, []);
   const ready = photos.length > 0 && !checking && held;

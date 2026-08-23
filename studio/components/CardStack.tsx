@@ -25,20 +25,27 @@ interface CardStackProps {
 }
 
 /**
- * A column of graded slabs drifting upward.
+ * A belt of graded slabs — drifting up on a wide screen, across on a phone.
  *
- * Each slot is the same case the maker produces — not a flat imitation of one —
- * because the case is the product. Only one slab is ever the live card:
- * browsers cap WebGL contexts at around sixteen and a scrolling column would
- * run through that, so the rest hold a still. The belt halts under the pointer,
- * and only the slab you are on tracks it.
+ * Each slot is the same case the maker produces, not a flat imitation of one,
+ * because the case is the product. Only one slab is ever a live lens: browsers
+ * cap WebGL contexts at around sixteen and a moving belt would run through
+ * that, so the rest hold a still inside the same template chrome.
+ *
+ * Nothing is held until you point at something. Seeding `held` with the first
+ * entry meant the belt was paused on its own first frame and never moved at
+ * all, which is a different fault from a belt that is too slow to notice.
  */
 export function CardStack({ entries, render, onAngle }: CardStackProps) {
-  const [held, setHeld] = useState<string | null>(entries[0]?.id ?? null);
+  const [held, setHeld] = useState<string | null>(null);
 
   const slot = useCallback(
-    (entry: StackEntry, key: string) => {
+    (entry: StackEntry, key: string, duplicate: boolean) => {
       const isHeld = held === entry.id;
+      // The belt is doubled so the loop has somewhere to run to. Only the first
+      // pass carries the live lens, or the seam would cost a second WebGL
+      // context for a card nobody is looking at.
+      const live = entry.real === true && !duplicate;
       return (
         <div
           className="stack-slot"
@@ -53,9 +60,9 @@ export function CardStack({ entries, render, onAngle }: CardStackProps) {
             serial={`LC-${entry.id.replace(/\D/g, '').padStart(7, '0')}`}
             tint={entry.tint}
             interactive={isHeld}
-            onAngle={isHeld && entry.real ? onAngle : undefined}
+            onAngle={isHeld && live ? onAngle : undefined}
           >
-            {render(entry, isHeld && entry.real === true)}
+            {render(entry, live)}
           </Slab>
         </div>
       );
@@ -64,11 +71,11 @@ export function CardStack({ entries, render, onAngle }: CardStackProps) {
   );
 
   return (
-    <div className="stack" data-paused={held !== null}>
+    <div className="stack" data-paused={held !== null} onPointerLeave={() => setHeld(null)}>
       <div className="stack-track">
-        {entries.map((entry) => slot(entry, `a-${entry.id}`))}
+        {entries.map((entry) => slot(entry, `a-${entry.id}`, false))}
         {/* A second pass, so the loop has somewhere to run to. */}
-        {entries.map((entry) => slot(entry, `b-${entry.id}`))}
+        {entries.map((entry) => slot(entry, `b-${entry.id}`, true))}
       </div>
     </div>
   );
