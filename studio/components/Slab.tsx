@@ -130,19 +130,6 @@ export function Slab({
                 </div>
               </div>
 
-              <div className="lab-sub">
-                {[
-                  ['CENTERING', '10'],
-                  ['CORNERS', '10'],
-                  ['EDGES', '10'],
-                  ['SURFACE', '10'],
-                ].map(([k, v]) => (
-                  <span className="lab-cell" key={k}>
-                    <span className="lab-cell-k">{k}</span>
-                    <span className="lab-cell-v">{v}</span>
-                  </span>
-                ))}
-              </div>
 
               <div className="lab-foot">
                 <span className="lab-bars" aria-hidden>

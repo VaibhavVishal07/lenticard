@@ -51,6 +51,8 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           fit="cover"
           onError={onError}
         />
+        <span className="tc-gloss" aria-hidden />
+        <span className="tc-grain" aria-hidden />
       </div>
     );
 
@@ -66,6 +68,13 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           ['--accent' as string]: theme.accent,
         }}
       >
+        {layout === 'fullart' && (
+          <div className="tc-body">
+            {art(true)}
+            <span className="tc-vign" aria-hidden />
+          </div>
+        )}
+
         {layout === 'classic' && (
           <div className="tc-body">
             <div className="tc-bevel">

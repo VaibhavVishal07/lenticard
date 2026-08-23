@@ -20,7 +20,6 @@ import { buildDefaultCard } from './lib/default-card';
 import { INITIAL, type CardSettings } from './lib/presets';
 import { decodePayload, type SharePayload } from './lib/share';
 import { clearLocation, hasCardInLocation, loadFromLocation } from './lib/stores';
-import { useTheme } from './lib/theme';
 import {
   copyFor,
   DEFAULT_TEMPLATE,
@@ -72,8 +71,6 @@ function TemplateStrip({
 }
 
 export default function App() {
-  const { theme, setTheme } = useTheme();
-
   const [photos, setPhotos] = useState<Frame[]>([]);
   const [cardTheme, setCardTheme] = useState<CardTheme>(DEFAULT_THEME);
   const [copy, setCopy] = useState<CardCopy>(() => copyFor(DEFAULT_THEME));
@@ -95,6 +92,7 @@ export default function App() {
   const cardRef = useRef<LenticularCardHandle>(null);
 
   useEffect(() => {
+    document.documentElement.dataset.theme = 'dark';
     const timer = window.setTimeout(() => setHeld(true), 1400);
     return () => window.clearTimeout(timer);
   }, []);
@@ -183,6 +181,25 @@ export default function App() {
 
   return (
     <>
+      {stage === 'home' && (
+        <div className="wall" aria-hidden>
+          {[...Array(14)].map((_, col) => (
+            <div className="wall-col" data-dir={col % 2} key={col}>
+              {[...Array(10)].map((_, i) => (
+                <span className="wall-card" data-v={(col * 3 + i) % 6} key={i} />
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <header className="brand">
+        <span className="mark">
+          <span className="mark-chip" aria-hidden />
+          lenticard
+        </span>
+      </header>
+
       <main className="stage" data-stage={stage}>
         {/* One card, mounted once, for every stage. Re-parenting it between
             layouts tore down the WebGL context and rebuilt it, which is what
@@ -214,14 +231,12 @@ export default function App() {
         </div>
 
         <div className="stage-side">
-          <AnimatePresence mode="wait">
             {stage === 'home' && (
               <motion.div
                 key="home"
                 className="pitch"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: ready ? 1 : 0, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.6, ease: EASE }}
               >
                 <p className="kicker">Graded, slabbed, one of one</p>
@@ -246,11 +261,7 @@ export default function App() {
                   </span>
                 </button>
 
-                {/* Templates as miniatures rather than a row of word chips. */}
-                <div className="strip">
-                  <span className="strip-label">Pick a template</span>
-                  <TemplateStrip value={layout} onPick={setLayout} />
-                </div>
+                <p className="hint">One minute. No account.</p>
               </motion.div>
             )}
 
@@ -260,7 +271,6 @@ export default function App() {
                 className="editor"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.5, ease: EASE }}
               >
                 <nav className="steps" aria-label="Steps">
@@ -475,7 +485,6 @@ export default function App() {
                 className="editor"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.5, ease: EASE }}
               >
                 <SendPanel
@@ -491,7 +500,6 @@ export default function App() {
                 />
               </motion.div>
             )}
-          </AnimatePresence>
         </div>
 
         {!ready && (
@@ -507,20 +515,9 @@ export default function App() {
         )}
       </main>
 
-      {ready && (
-        <Dock theme={theme} onTheme={setTheme}>
-          {stage === 'home' ? (
-            <button
-              className="btn btn-holo"
-              onClick={() => {
-                setEncased(false);
-                setStage('make');
-              }}
-            >
-              Make yours
-            </button>
-          ) : (
-            <>
+      {ready && stage !== 'home' && (
+        <Dock>
+          <>
               <button
                 className="btn"
                 onClick={() => {
@@ -549,8 +546,7 @@ export default function App() {
                   Seal and send
                 </button>
               )}
-            </>
-          )}
+          </>
         </Dock>
       )}
 

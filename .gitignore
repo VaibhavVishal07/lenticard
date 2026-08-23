@@ -13,3 +13,8 @@ public/lenticard-element.iife.js
 .agents/
 .claude/
 skills-lock.json
+
+# Dev-only preview harness
+check.html
+studio/check.tsx
+scripts/prep-art.mjs

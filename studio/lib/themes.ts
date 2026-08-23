@@ -164,7 +164,7 @@ export function copyFor(theme: CardTheme): CardCopy {
 
 // ---------------------------------------------------------------- templates
 
-export type CardLayout = 'classic' | 'kaboom' | 'prism' | 'retro' | 'museum';
+export type CardLayout = 'fullart' | 'classic' | 'kaboom' | 'prism' | 'retro' | 'museum';
 
 export interface Template {
   id: CardLayout;
@@ -180,6 +180,12 @@ export interface Template {
  * the name goes, and what the frame is made of all change.
  */
 export const TEMPLATES: Template[] = [
+  {
+    id: 'fullart',
+    label: 'Full art',
+    hint: 'The picture is the card. Nothing printed over it but the mark',
+    swatch: ['#1b2f6b', '#7d5cff'],
+  },
   {
     id: 'classic',
     label: 'Classic',
