@@ -12,10 +12,13 @@ export type CardSettings = Pick<
  * half the frame stack, so neighbouring frames are always woven into the
  * picture the way they are on a printed sheet. Coarse ridges keep the weave
  * visible at arm's length, and a low blend keeps each strip a clean cut.
+ *
+ * Ridges stay high. A coarse interlace reads as a printing fault rather than a
+ * lens, so this is not something worth letting anyone dial down.
  */
 export const INITIAL: CardSettings = {
   orientation: 'auto',
-  lenticules: 62,
+  lenticules: 160,
   parallax: 1.15,
   blend: 0.14,
   sheen: 0.62,

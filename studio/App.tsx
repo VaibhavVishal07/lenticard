@@ -388,15 +388,6 @@ export default function App() {
                     <details className="more">
                       <summary>Lens settings</summary>
                       <Slider
-                        label="Ridges"
-                        value={settings.lenticules}
-                        min={24}
-                        max={200}
-                        onChange={(lenticules) =>
-                          setSettings((s) => ({ ...s, lenticules }))
-                        }
-                      />
-                      <Slider
                         label="Shift"
                         value={settings.parallax}
                         min={0.4}
