@@ -2313,28 +2313,37 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 /* =========================================================================
    The flip, without a lens
 
-   Three views of the print stacked on each other and cross-faded. Each holds
-   for a third of the cycle and hands over with a short overlap, so what you
-   see is the card turning rather than three pictures blinking. The negative
-   delay puts each layer a third of the way further round the same loop.
+   Four angles of the print stacked on each other and dissolved through. The
+   previous version held each view for a third of the loop and then changed in
+   a few percent, which is a cut — next to the live card, which sweeps, it read
+   as a stutter.
+
+   Each layer now rises over a quarter of the loop, holds for a quarter, falls
+   over a quarter and waits out the rest, with the layers a quarter of a loop
+   apart. That guarantees exactly one layer is fully up at any moment, so the
+   card is never see-through, and its neighbours are always part way in or out,
+   so the change is continuous. Linear timing, because a lens turning at a
+   steady rate does not ease.
    ========================================================================= */
 
 .tc-art .tc-still[data-views] {
   position: absolute;
   inset: 0;
-  animation: tc-turn 7.2s ease-in-out infinite;
+  animation: tc-turn 9.6s linear infinite;
   animation-delay: calc(var(--view) * -2.4s);
 }
 
 @keyframes tc-turn {
-  0%, 26% { opacity: 1; }
-  33.4%, 92.6% { opacity: 0; }
-  100% { opacity: 1; }
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  50% { opacity: 1; }
+  75% { opacity: 0; }
+  100% { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   /* Standing still it is still a lenticular print — the weave does not need
-     the movement to be legible — so the middle view simply stays up. */
+     the movement to be legible — so one view simply stays up. */
   .tc-art .tc-still[data-views] { animation: none; opacity: 0; }
   .tc-art .tc-still[data-views][style*='--view: 1'] { opacity: 1; }
 }

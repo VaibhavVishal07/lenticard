@@ -15,15 +15,23 @@
  */
 
 /**
- * Coarser than the shader's 160, on purpose. The live card renders at device
- * resolution and antialiases each ridge in the fragment shader; a still is a
- * bitmap the browser scales down with a box filter, and 160 ridges at the size
- * a case is drawn come back as moire rather than as a lens.
+ * Fine, and drawn well above the size it is shown at.
+ *
+ * Ninety-six ridges on a 630px sheet is a 6px bar, and at the size a case is
+ * actually drawn that is a fat stripe across the picture rather than a lens —
+ * blotchy enough that you cannot read what the card is of. Two hundred ridges
+ * on a 780px sheet is a 4px bar that the browser's downscale averages into a
+ * fine line, which is what a lens sheet looks like from arm's length.
  */
-const RIDGES = 96;
+const RIDGES = 200;
 
-/** Left tilt, straight on, right tilt. The three the UI already names. */
-export const PHASES = 3;
+/**
+ * How many angles the print is drawn at.
+ *
+ * Three snapped: a third of the loop holding, then a hard change. The live
+ * card sweeps, so this has to have enough steps to dissolve rather than cut.
+ */
+export const PHASES = 4;
 
 function load(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -45,8 +53,8 @@ function contain(img: HTMLImageElement, w: number, h: number) {
 
 export async function interlacedViews(
   urls: string[],
-  width = 630,
-  height = 880,
+  width = 800,
+  height = 1117,
 ): Promise<string[]> {
   const frames = await Promise.all(urls.slice(0, 6).map(load));
   if (!frames.length) throw new Error('An interlace needs at least one frame');
@@ -86,7 +94,7 @@ export async function interlacedViews(
     // which locks the main thread for seconds before the page can paint.
     if (frames.length > 1) {
       ctx.save();
-      ctx.globalAlpha = 0.34;
+      ctx.globalAlpha = 0.22;
       for (let f = 0; f < frames.length; f++) {
         if (f === lead) continue;
         const path = new Path2D();
@@ -112,10 +120,10 @@ export async function interlacedViews(
     const tileCtx = tile.getContext('2d');
     if (tileCtx) {
       const ridge = tileCtx.createLinearGradient(0, 0, tile.width, 0);
-      ridge.addColorStop(0, 'rgba(0, 0, 0, 0.2)');
-      ridge.addColorStop(0.42, 'rgba(255, 255, 255, 0.09)');
-      ridge.addColorStop(0.62, 'rgba(255, 255, 255, 0.04)');
-      ridge.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
+      ridge.addColorStop(0, 'rgba(0, 0, 0, 0.11)');
+      ridge.addColorStop(0.42, 'rgba(255, 255, 255, 0.055)');
+      ridge.addColorStop(0.62, 'rgba(255, 255, 255, 0.025)');
+      ridge.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
       tileCtx.fillStyle = ridge;
       tileCtx.fillRect(0, 0, tile.width, 1);
       const pattern = ctx.createPattern(tile, 'repeat');
@@ -133,9 +141,9 @@ export async function interlacedViews(
     const offset = (view / PHASES - 0.5) * width * 1.2;
     const foil = ctx.createLinearGradient(offset, height, width + offset, 0);
     foil.addColorStop(0, 'rgba(92, 225, 255, 0)');
-    foil.addColorStop(0.32, 'rgba(123, 123, 255, 0.12)');
-    foil.addColorStop(0.5, 'rgba(255, 94, 207, 0.16)');
-    foil.addColorStop(0.68, 'rgba(92, 255, 176, 0.11)');
+    foil.addColorStop(0.32, 'rgba(123, 123, 255, 0.1)');
+    foil.addColorStop(0.5, 'rgba(255, 94, 207, 0.13)');
+    foil.addColorStop(0.68, 'rgba(92, 255, 176, 0.09)');
     foil.addColorStop(1, 'rgba(255, 209, 102, 0)');
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
@@ -143,7 +151,7 @@ export async function interlacedViews(
     ctx.fillRect(0, 0, width, height);
     ctx.restore();
 
-    views.push(canvas.toDataURL('image/jpeg', 0.88));
+    views.push(canvas.toDataURL('image/jpeg', 0.86));
     // Hand the thread back between views. Three of these back to back is long
     // enough to be a visible stall on the first paint. A timer, not a frame:
     // requestAnimationFrame never fires in a background tab, and this would
