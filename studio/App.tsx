@@ -14,6 +14,7 @@ import { Dock } from './components/Dock';
 import { frameFromDataUrl, Frames, framesFromFiles, type Frame } from './components/Frames';
 import { Greeting } from './components/Greeting';
 import { SendPanel } from './components/SendPanel';
+import { Tuner } from './components/Tuner';
 import { CardStack, type StackEntry } from './components/CardStack';
 import { CASE_TEXTURES, CASE_TINTS, Slab, type CaseTexture } from './components/Slab';
 import { TradingCard } from './components/TradingCard';
@@ -93,6 +94,8 @@ export default function App() {
   /** The L1 → L2 pull: the column recedes, then one case rises out of the box. */
   const [leaving, setLeaving] = useState(false);
   const [pulling, setPulling] = useState(false);
+  /** ?tune puts the home page's proportions on sliders. */
+  const [tuning] = useState(() => new URLSearchParams(window.location.search).has('tune'));
   const cardRef = useRef<LenticularCardHandle>(null);
 
   useEffect(() => {
@@ -582,6 +585,8 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {tuning && stage === 'home' && <Tuner />}
 
       {ready && stage !== 'home' && (
         <Dock>

@@ -38,6 +38,11 @@
        document.documentElement.style.setProperty('--stack-card', '470px')
      Add ?card=470 to the URL for the same thing on a page you can share. */
   --stack-card: 390px;
+
+  /* Space from one case to the next in the column, and space between the
+     pitch and the column. Both are here so ?tune can reach them. */
+  --stack-gap: 1.75rem;
+  --stage-gap: clamp(1.5rem, 5vw, 4.5rem);
   --gutter: clamp(1.25rem, 5vw, 2.5rem);
 
   /* The one accent, used everywhere. */
@@ -445,7 +450,7 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   display: grid;
   grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
   align-items: end;
-  gap: clamp(1.5rem, 5vw, 4.5rem);
+  gap: var(--stage-gap);
   max-width: 1320px;
   margin-inline: auto;
   /* Bottom-heavy on purpose: the block sits 40px off the floor. */
@@ -1879,4 +1884,66 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
     padding-inline: 1.5rem;
     margin-inline: -1.5rem;
   }
+}
+
+/* The column's rhythm comes from the same variable the tuner writes. */
+.stack-track { gap: var(--stack-gap); padding-block: var(--stack-gap); }
+
+/* =========================================================================
+   The tuner
+
+   Only ever mounted behind ?tune. It writes the same three custom properties
+   you would edit by hand, so what you drag is what you paste back.
+   ========================================================================= */
+
+.tuner {
+  position: fixed;
+  left: var(--gutter);
+  bottom: var(--gutter);
+  z-index: 40;
+  width: min(280px, calc(100vw - var(--gutter) * 2));
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem 1.05rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--hair-2);
+  background: rgba(18, 20, 26, 0.72);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  box-shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.9);
+}
+
+.tuner-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.tuner-head b { font-size: 0.8125rem; font-weight: 700; }
+.tuner-head span {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--ink-3);
+}
+
+.tuner-knob { display: grid; gap: 0.4rem; }
+.tuner-knob header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.tuner-knob label { font-size: 0.75rem; color: var(--ink-2); }
+.tuner-knob output {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  color: var(--ink);
+}
+
+.tuner-foot { display: flex; gap: 0.4rem; }
+.tuner-foot .btn { flex: 1; padding: 0.5rem 0.7rem; font-size: 0.75rem; }
+
+@media (max-width: 940px) {
+  .tuner { width: auto; right: var(--gutter); }
 }
