@@ -17,6 +17,8 @@ interface TradingCardProps {
   /** The photograph's strongest colour, for whatever the template outlines
       the card with — so the frame looks like it belongs to the picture. */
   tint?: string;
+  /** Let the card turn itself now and then, until someone points at it. */
+  demo?: boolean;
   theme: CardTheme;
   copy: CardCopy;
   layout: CardLayout;
@@ -44,13 +46,13 @@ interface TradingCardProps {
  */
 export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
   function TradingCard(
-    { photos, still, views, ratio, tint, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
+    { photos, still, views, ratio, tint, demo, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
     ref,
   ) {
     const art = (fill: boolean): ReactNode => (
       <div className="tc-art" data-fill={fill}>
         {views && still ? (
-          <Turn flat={still} views={views} />
+          <Turn flat={still} views={views} demo={demo} />
         ) : still ? (
           <img className="tc-still" src={still} alt="" loading="lazy" />
         ) : (

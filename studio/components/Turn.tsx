@@ -3,8 +3,11 @@ import { useEffect, useRef } from 'react';
 interface TurnProps {
   /** The plain photograph. What the card is when nobody is touching it. */
   flat: string;
-  /** The print drawn at four angles, blended between as the cursor moves. */
+  /** The print drawn at several angles, blended between as the cursor moves. */
   views: string[];
+  /** Turn itself now and then, so the belt shows what a card does without
+      waiting for someone to find it with a cursor. */
+  demo?: boolean;
 }
 
 /** How fast the turn catches up to the cursor. Higher is snappier. */
@@ -41,7 +44,7 @@ const REACH = 0.5;
  * `style.opacity` inside a frame loop — a state update per pointer event would
  * re-render the whole card sixty times a second to change two numbers.
  */
-export function Turn({ flat, views }: TurnProps) {
+export function Turn({ flat, views, demo = false }: TurnProps) {
   const host = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -63,8 +66,44 @@ export function Turn({ flat, views }: TurnProps) {
     let strength = 0;
     let frame = 0;
 
+    // The unattended sweep: when it started, when the next one is due, and
+    // whether a real pointer has ever arrived — after that the card is yours
+    // and it stops performing.
+    let sweptAt = 0;
+    let nextSweep = performance.now() + 2600 + Math.random() * 9000;
+    let touched = false;
+    let timer = 0;
+
+    const onScreen = () => {
+      const box = zone.getBoundingClientRect();
+      return box.bottom > 0 && box.top < window.innerHeight;
+    };
+
     const paint = () => {
       frame = 0;
+      const now = performance.now();
+
+      // Nobody is holding it, so it turns on its own — up, across and back,
+      // and down again. Off-screen cases are skipped rather than delayed, so
+      // the belt is not full of performances nobody can see.
+      if (demo && !touched) {
+        if (!sweptAt && now >= nextSweep) {
+          if (onScreen()) sweptAt = now;
+          else nextSweep = now + 2000 + Math.random() * 3000;
+        }
+        if (sweptAt) {
+          const t = (now - sweptAt) / 2600;
+          if (t >= 1) {
+            sweptAt = 0;
+            nextSweep = now + 7000 + Math.random() * 12000;
+            wanted = 0;
+            target = 0.5;
+          } else {
+            wanted = t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
+            target = 0.5 - Math.sin(t * Math.PI * 2) * 0.5;
+          }
+        }
+      }
 
       turn += (target - turn) * CHASE;
       strength += (wanted - strength) * FADE;
@@ -80,9 +119,29 @@ export function Turn({ flat, views }: TurnProps) {
         layers[i].style.opacity = opacity.toFixed(3);
       }
 
+      // The lens sheet itself is drawn in CSS at the size the card actually
+      // is. Baking it into the sheet does not work: two hundred ridges on an
+      // 800px bitmap are sub-pixel once the browser has scaled it down to a
+      // case in the belt, so the box filter averages them away and what is
+      // left is three photographs dissolving into each other.
+      node.style.setProperty('--lens', strength.toFixed(3));
+
       const settled =
-        Math.abs(target - turn) < 0.0015 && Math.abs(wanted - strength) < 0.0015;
-      if (!settled) frame = requestAnimationFrame(paint);
+        !sweptAt &&
+        Math.abs(target - turn) < 0.0015 &&
+        Math.abs(wanted - strength) < 0.0015;
+      if (!settled) {
+        frame = requestAnimationFrame(paint);
+        return;
+      }
+      // Parked. A frame loop cannot notice the next sweep falling due, so a
+      // timer wakes it — otherwise the card sleeps for good.
+      if (demo && !touched) {
+        timer = window.setTimeout(() => {
+          timer = 0;
+          wake();
+        }, Math.max(120, nextSweep - performance.now()));
+      }
     };
 
     const wake = () => {
@@ -90,6 +149,8 @@ export function Turn({ flat, views }: TurnProps) {
     };
 
     const move = (event: Event) => {
+      touched = true;
+      sweptAt = 0;
       const rect = card.getBoundingClientRect();
       if (!rect.width) return;
       const x = (event as PointerEvent).clientX;
@@ -115,8 +176,9 @@ export function Turn({ flat, views }: TurnProps) {
       zone.removeEventListener('pointermove', move);
       zone.removeEventListener('pointerleave', leave);
       if (frame) cancelAnimationFrame(frame);
+      if (timer) window.clearTimeout(timer);
     };
-  }, [views]);
+  }, [views, demo]);
 
   return (
     <span className="tc-turn" ref={host}>
@@ -126,6 +188,7 @@ export function Turn({ flat, views }: TurnProps) {
       {views.map((src, i) => (
         <img key={i} className="tc-still tc-view" src={src} alt="" loading="lazy" />
       ))}
+      <span className="tc-lens" aria-hidden />
     </span>
   );
 }

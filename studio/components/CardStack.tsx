@@ -42,7 +42,7 @@ export function CardStack({ entries, render }: CardStackProps) {
   const [held, setHeld] = useState<string | null>(null);
 
   const slot = useCallback(
-    (entry: StackEntry, key: string, duplicate: boolean) => {
+    (entry: StackEntry, key: string, duplicate: boolean, place: number) => {
       const isHeld = held === entry.id;
       // The belt is doubled so the loop has somewhere to run to. Only the first
       // pass carries the live lens, or the seam would cost a second WebGL
@@ -57,6 +57,7 @@ export function CardStack({ entries, render }: CardStackProps) {
         <div
           className="stack-slot"
           key={key}
+          style={{ ['--slot' as string]: place }}
           data-held={isHeld}
           onPointerEnter={() => setHeld(entry.id)}
         >
@@ -79,9 +80,9 @@ export function CardStack({ entries, render }: CardStackProps) {
   return (
     <div className="stack" data-paused={held !== null} onPointerLeave={() => setHeld(null)}>
       <div className="stack-track">
-        {entries.map((entry) => slot(entry, `a-${entry.id}`, false))}
+        {entries.map((entry, i) => slot(entry, `a-${entry.id}`, false, i))}
         {/* A second pass, so the loop has somewhere to run to. */}
-        {entries.map((entry) => slot(entry, `b-${entry.id}`, true))}
+        {entries.map((entry, i) => slot(entry, `b-${entry.id}`, true, entries.length + i))}
       </div>
     </div>
   );

@@ -288,6 +288,7 @@ export default function App() {
                     views={isLive ? undefined : woven[entry.art]?.views}
                     ratio={woven[entry.art]?.ratio}
                     tint={woven[entry.art]?.tint}
+                    demo
                     theme={entryTheme}
                     copy={{ ...copyFor(entryTheme), title: entry.name }}
                     layout={entry.layout}
