@@ -1,0 +1,1170 @@
+/* =========================================================================
+   lenticard studio
+   Near-black, one acid-lime accent, Satoshi throughout, and every surface
+   built as glass: a translucent fill, a lit top edge, and a hairline that
+   reads as the cut. Controls float over the work instead of walling it off
+   in a sidebar.
+   ========================================================================= */
+
+@property --lc-flip {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+:root {
+  /* Type */
+  --font-display: 'Satoshi', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Satoshi', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Rhythm */
+  --gutter: clamp(1.25rem, 4vw, 3.5rem);
+  --dock-radius: 1.75rem;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Layers — a scale, not arbitrary numbers */
+  --z-stage: 1;
+  --z-dock: 20;
+  --z-nav: 30;
+  --z-overlay: 40;
+  --z-grain: 45;
+  --z-intro: 60;
+}
+
+/* Near-black, tinted very slightly cool so it never reads as flat #000,
+   with a single acid-lime accent doing all the signalling. */
+:root,
+:root[data-theme='dark'] {
+  --paper: #08090a;
+  --paper-2: #030405;
+  --ink: #eef2ec;
+  --ink-2: rgba(238, 242, 236, 0.66);
+  --ink-3: rgba(238, 242, 236, 0.44);
+  --hair: rgba(238, 242, 236, 0.11);
+  --hair-2: rgba(238, 242, 236, 0.2);
+  --accent: #c3f53c;
+  --accent-ink: #0b1004;
+  --accent-wash: rgba(195, 245, 60, 0.12);
+  --glass: rgba(16, 18, 20, 0.56);
+  --glass-2: rgba(238, 242, 236, 0.055);
+  --glass-3: rgba(238, 242, 236, 0.095);
+  --edge:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.045),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  --lift: 0 1px 1px rgba(255, 255, 255, 0.07) inset;
+  --cast: 0 24px 50px -28px rgba(0, 0, 0, 0.9);
+  --cast-lg: 0 40px 90px -44px rgba(0, 0, 0, 0.95);
+  --grain: 0.05;
+}
+
+/* Dark is the default here. Light is a clean neutral paper, with the lime
+   pushed down in value so it still carries contrast on white. */
+:root[data-theme='light'] {
+  --paper: #f1f3ef;
+  --paper-2: #e5e8e0;
+  --ink: #10130d;
+  --ink-2: rgba(16, 19, 13, 0.66);
+  --ink-3: rgba(16, 19, 13, 0.44);
+  --hair: rgba(16, 19, 13, 0.12);
+  --hair-2: rgba(16, 19, 13, 0.22);
+  --accent: #5f8f0a;
+  --accent-ink: #f7ffea;
+  --accent-wash: rgba(95, 143, 10, 0.11);
+  --glass: rgba(255, 255, 255, 0.6);
+  --glass-2: rgba(255, 255, 255, 0.48);
+  --glass-3: rgba(16, 19, 13, 0.05);
+  --edge:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(20, 28, 14, 0.07);
+  --lift: 0 1px 1px rgba(255, 255, 255, 0.9) inset;
+  --cast: 0 24px 50px -28px rgba(20, 28, 14, 0.42);
+  --cast-lg: 0 40px 90px -44px rgba(20, 28, 14, 0.55);
+  --grain: 0.03;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 50%;
+  top: -60px;
+  transform: translateX(-50%);
+  z-index: var(--z-intro);
+  padding: 10px 18px;
+  border-radius: 0 0 12px 12px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: top 200ms var(--ease);
+}
+.skip-link:focus { top: 0; }
+
+/* Fixed grain. Never on a scrolling container — that repaints forever. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-grain);
+  pointer-events: none;
+  opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* =========================================================================
+   Lenticular theme flip
+   ========================================================================= */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Old page stays put; the new one is revealed strip by strip, exactly the way
+   a lenticular sheet hands over from one frame to the next. */
+::view-transition-old(root) { z-index: 0; }
+::view-transition-new(root) {
+  z-index: 1;
+  animation: lenticular-flip 820ms var(--ease) forwards;
+  mask-image: linear-gradient(90deg, #000 var(--lc-flip), transparent 0);
+  mask-size: 18px 100%;
+  mask-repeat: repeat;
+  -webkit-mask-image: linear-gradient(90deg, #000 var(--lc-flip), transparent 0);
+  -webkit-mask-size: 18px 100%;
+  -webkit-mask-repeat: repeat;
+}
+
+@keyframes lenticular-flip {
+  from { --lc-flip: 0%; }
+  to   { --lc-flip: 100%; }
+}
+
+/* A highlight sweeping across the ridges while the flip runs. */
+html[data-flipping='true']::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-grain);
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.4) 48%,
+    rgba(214, 255, 150, 0.55) 50%,
+    rgba(255, 255, 255, 0.4) 52%,
+    transparent 62%
+  );
+  mix-blend-mode: overlay;
+  animation: flip-sheen 820ms var(--ease) forwards;
+}
+
+@keyframes flip-sheen {
+  from { transform: translateX(-60%); opacity: 0; }
+  35%  { opacity: 1; }
+  to   { transform: translateX(60%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; mask-image: none; }
+  html[data-flipping='true']::after { display: none; }
+}
+
+/* =========================================================================
+   Intro
+   ========================================================================= */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-intro);
+  display: grid;
+  place-items: center;
+  gap: 2.5rem;
+  padding: var(--gutter);
+  background: var(--paper);
+}
+
+.intro-inner {
+  display: grid;
+  justify-items: center;
+  gap: 2rem;
+  width: min(760px, 100%);
+}
+
+.intro-card { width: 100%; }
+
+.intro-foot {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.intro-bar {
+  width: 132px;
+  height: 2px;
+  background: var(--hair);
+  overflow: hidden;
+  border-radius: 99px;
+}
+.intro-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  animation: intro-load 2.1s var(--ease) forwards;
+}
+@keyframes intro-load {
+  from { transform: scaleX(0.04); }
+  to   { transform: scaleX(1); }
+}
+
+/* =========================================================================
+   Nav — a detached glass pill, not a bar glued to the top
+   ========================================================================= */
+
+.nav {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-nav);
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.4rem 0.4rem 1.1rem;
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--hair);
+  box-shadow: var(--edge), var(--cast);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  padding-right: 0.5rem;
+}
+
+/* A ridged chip: the product, at 26px. */
+.brand-chip {
+  width: 26px;
+  height: 19px;
+  border-radius: 5px;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(255, 255, 255, 0.42) 0 1px,
+      transparent 1px 3px),
+    linear-gradient(120deg, var(--accent), color-mix(in oklab, var(--accent) 45%, #6fe8c0));
+  box-shadow: var(--edge), 0 2px 10px -3px var(--accent);
+}
+
+.nav-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--hair);
+  margin: 0 0.15rem;
+}
+
+/* =========================================================================
+   Buttons
+   ========================================================================= */
+
+.btn {
+  --btn-bg: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--btn-bg);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 320ms var(--ease),
+    color 320ms var(--ease),
+    border-color 320ms var(--ease),
+    transform 180ms var(--ease);
+}
+
+.btn:hover:not(:disabled) { --btn-bg: var(--accent-wash); color: var(--ink); }
+.btn:active:not(:disabled) { transform: scale(0.975); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-solid {
+  --btn-bg: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  padding-right: 0.4rem;
+  box-shadow: 0 6px 18px -10px var(--accent);
+}
+.btn-solid:hover:not(:disabled) {
+  --btn-bg: color-mix(in oklab, var(--accent) 88%, #fff);
+  color: var(--accent-ink);
+}
+
+/* The trailing glyph lives in its own well, flush with the pill's inner edge. */
+.btn-well {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.16);
+  transition: transform 320ms var(--ease);
+}
+.btn-solid:hover .btn-well { transform: translate(2px, -1px) scale(1.06); }
+
+.btn-outline {
+  border-color: var(--hair);
+  color: var(--ink);
+  background: var(--glass-2);
+  box-shadow: var(--edge);
+}
+.btn-outline:hover:not(:disabled) { --btn-bg: var(--accent-wash); }
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 320ms var(--ease), color 320ms var(--ease), transform 180ms var(--ease);
+}
+.icon-btn:hover { background: var(--accent-wash); color: var(--ink); }
+.icon-btn:active { transform: scale(0.94); }
+
+/* Theme control: a lens sliding across two states, not a sun/moon toggle. */
+.lens-switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--hair);
+  background: var(--glass-3);
+  box-shadow: var(--edge);
+}
+.lens-switch button {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.7rem;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  border-radius: 999px;
+  transition: color 320ms var(--ease);
+}
+.lens-switch button[aria-pressed='true'] { color: var(--ink); }
+.lens-switch .lens {
+  position: absolute;
+  z-index: 0;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  width: 1.9rem;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(255, 255, 255, 0.3) 0 1px,
+      transparent 1px 3px),
+    var(--glass-3);
+  box-shadow: var(--edge), 0 2px 8px -4px rgba(0, 0, 0, 0.5);
+}
+
+/* =========================================================================
+   Stage
+   ========================================================================= */
+
+.stage {
+  position: relative;
+  z-index: var(--z-stage);
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: center;
+  gap: 2.25rem;
+  padding: 8.5rem var(--gutter) 15rem;
+  text-align: center;
+}
+
+/* Ambient wash, offset from centre so the composition isn't a bullseye. */
+.stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(52% 42% at 68% 18%, var(--accent-wash), transparent 70%),
+    radial-gradient(46% 38% at 18% 72%, var(--accent-wash), transparent 72%);
+}
+
+
+.card-holder {
+  position: relative;
+  width: min(540px, 82vw);
+  transition: width 520ms var(--ease);
+}
+.card-holder[data-orientation='portrait'] { width: min(376px, 68vw); }
+.card-holder[data-orientation='square'] { width: min(452px, 76vw); }
+.card-holder[data-orientation='circle'] { width: min(430px, 74vw); }
+
+.stage-note {
+  max-width: 52ch;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  text-wrap: pretty;
+}
+.stage-note b { color: var(--ink); font-weight: 600; }
+
+.stage-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  padding: 4rem 1rem;
+  color: var(--ink-2);
+}
+.empty h2 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+/* =========================================================================
+   Console — the floating dock that replaces the sidebar
+   ========================================================================= */
+
+.console {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: var(--z-dock);
+  width: min(880px, calc(100vw - 2rem));
+  /* Double bezel: an outer tray holding an inner plate. */
+  padding: 0.4rem;
+  border-radius: var(--dock-radius);
+  background: var(--glass);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--hair);
+  box-shadow: var(--edge), var(--cast-lg);
+}
+
+/* Inner plate. No blur of its own — it scrolls, and blurring a scrolling
+   surface makes the compositor repaint it every frame. The lit edge and the
+   translucent fill do the work instead. */
+.console-inner {
+  border-radius: calc(var(--dock-radius) - 0.4rem);
+  background: var(--glass-2);
+  border: 1px solid var(--hair);
+  box-shadow: var(--edge);
+  overflow: hidden;
+}
+
+.console-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.35rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.console-tabs::-webkit-scrollbar { display: none; }
+
+.console-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  isolation: isolate;
+  transition: color 320ms var(--ease);
+}
+.console-tab:hover { color: var(--ink); }
+.console-tab[aria-selected='true'] { color: var(--ink); font-weight: 600; }
+
+.console-tab .pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 999px;
+  background: var(--accent-wash);
+  border: 1px solid var(--hair);
+}
+
+.console-spacer { flex: 1; min-width: 0.5rem; }
+
+.console-body {
+  border-top: 1px solid var(--hair);
+  max-height: min(46dvh, 420px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hair-2) transparent;
+}
+.console-body::-webkit-scrollbar { width: 8px; }
+.console-body::-webkit-scrollbar-thumb {
+  background: var(--hair-2);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.console-pane {
+  padding: 1.15rem 1.15rem 1.35rem;
+  display: grid;
+  gap: 1.15rem;
+}
+
+
+.step {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1.5rem 1.35rem 1.65rem;
+  border-radius: 1.35rem;
+  background: var(--glass-2);
+  border: 1px solid var(--hair);
+  box-shadow: var(--edge);
+}
+.step h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.step p { margin: 0; color: var(--ink-2); font-size: 0.875rem; text-wrap: pretty; }
+.step-n {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+}
+
+/* =========================================================================
+   The wall
+   ========================================================================= */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.tile {
+  position: relative;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.55rem 0.55rem 0.85rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--hair);
+  background: var(--glass-2);
+  box-shadow: var(--edge);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.tile-frame {
+  position: relative;
+  display: block;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  aspect-ratio: 3 / 2;
+  background: var(--paper-2);
+}
+.tile[data-orientation='portrait'] .tile-frame { aspect-ratio: 5 / 7; }
+.tile[data-orientation='square'] .tile-frame { aspect-ratio: 1; }
+.tile[data-orientation='circle'] .tile-frame { aspect-ratio: 1; border-radius: 50%; }
+
+.tile-frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 380ms var(--ease);
+}
+
+.tile-ridges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.09) 0 1px,
+    rgba(0, 0, 0, 0.09) 1px 2px,
+    transparent 2px 5px
+  );
+  mix-blend-mode: overlay;
+}
+
+.tile-meta { display: grid; gap: 0.1rem; padding-inline: 0.35rem; }
+.tile-from { font-size: 0.875rem; font-weight: 600; letter-spacing: -0.01em; }
+.tile-sub { font-size: 0.71875rem; color: var(--ink-3); }
+
+.tile-badge {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.4rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tile-skeleton {
+  aspect-ratio: 3 / 2;
+  cursor: default;
+  background: linear-gradient(100deg, var(--glass-2) 30%, var(--glass-3) 50%, var(--glass-2) 70%);
+  background-size: 220% 100%;
+  animation: lc-shimmer 1.5s ease-in-out infinite;
+}
+@keyframes lc-shimmer {
+  from { background-position: 120% 0; }
+  to   { background-position: -120% 0; }
+}
+
+.tile-cta {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.5rem;
+  min-height: 180px;
+  border-style: dashed;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.tile-cta-mark {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+/* Lightbox: the one card on the page that gets the real renderer. */
+.lightbox {
+  position: relative;
+  display: grid;
+  gap: 1.5rem;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  width: min(880px, 100%);
+  padding: 1.5rem;
+  border-radius: 1.75rem;
+  background: var(--glass);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid var(--hair);
+  box-shadow: var(--edge), var(--cast-lg);
+}
+.lightbox-card { width: 100%; }
+.lightbox-card[data-orientation='portrait'] { width: min(300px, 100%); margin-inline: auto; }
+.lightbox-meta { display: grid; gap: 0.75rem; }
+.lightbox-from { margin: 0; font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+.lightbox-note { margin: 0; color: var(--ink-2); font-size: 0.9375rem; text-wrap: pretty; }
+.lightbox-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; }
+.lightbox-close { position: absolute; top: 0.85rem; right: 0.85rem; }
+
+/* =========================================================================
+   Developers strip
+   ========================================================================= */
+
+.devs-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: center;
+  padding: clamp(1.75rem, 4vw, 2.75rem);
+  border-radius: 1.75rem;
+  background: var(--glass-2);
+  border: 1px solid var(--hair);
+  box-shadow: var(--edge);
+}
+.devs-inner > div { display: grid; gap: 0.85rem; justify-items: start; }
+.devs-inner h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  letter-spacing: -0.04em;
+}
+.devs-inner p { margin: 0; color: var(--ink-2); font-size: 0.9375rem; max-width: 46ch; }
+
+.devs-code {
+  margin: 0;
+  padding: 1.15rem;
+  border-radius: 1.15rem;
+  background: color-mix(in oklab, var(--paper-2) 60%, transparent);
+  border: 1px solid var(--hair);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--ink-2);
+  overflow-x: auto;
+}
+
+.stage-title em { font-style: normal; color: var(--accent); }
+.stage-title-sm { font-size: clamp(1.4rem, 3vw, 2rem); }
+
+/* =========================================================================
+   Gift dialog
+   ========================================================================= */
+
+.gift-body { display: grid; gap: 1.1rem; padding: 0 1.15rem 1.15rem; }
+.gift-names { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.gift-hint, .gift-warn {
+  margin: 0;
+  font-size: 0.78125rem;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+.gift-warn { color: var(--accent); }
+.link-out { font-family: var(--font-mono); font-size: 0.6875rem; }
+textarea.text-input { resize: vertical; min-height: 3.4rem; font-family: inherit; }
+
+/* =========================================================================
+   Greeting
+   ========================================================================= */
+
+.greeting {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: clamp(2rem, 8vw, 5rem) var(--gutter);
+  text-align: center;
+  overflow: hidden;
+}
+
+.greeting-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 40% at 50% 26%, color-mix(in oklab, var(--tint) 26%, transparent), transparent 72%),
+    radial-gradient(60% 50% at 50% 100%, color-mix(in oklab, var(--tint) 12%, transparent), transparent 70%);
+}
+
+.sealed, .opened {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1.25rem;
+  width: min(620px, 100%);
+}
+
+.seal {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--tint) 50%, transparent);
+  background: color-mix(in oklab, var(--tint) 22%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--edge), 0 20px 50px -22px var(--tint);
+  color: var(--tint);
+  font-size: 2.1rem;
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+}
+.seal-glyph { line-height: 1; }
+.seal-ring {
+  position: absolute;
+  inset: -10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--tint) 30%, transparent);
+  animation: seal-pulse 3.4s var(--ease) infinite;
+}
+@keyframes seal-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50%      { transform: scale(1.09); opacity: 0.16; }
+}
+
+.sealed-tease {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.75rem, 5vw, 2.9rem);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.sealed-sub { margin: 0; color: var(--ink-2); font-size: 0.9375rem; max-width: 40ch; }
+
+.greeting-card { width: min(390px, 78vw); }
+.greeting-card[data-orientation='landscape'] { width: min(520px, 84vw); }
+
+.greeting-note {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+  max-width: 46ch;
+  padding: 1.1rem 1.35rem;
+  border-radius: 1.25rem;
+  background: var(--glass-2);
+  border: 1px solid var(--hair);
+  box-shadow: var(--edge);
+  font-size: 1rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.greeting-note cite { font-style: normal; font-size: 0.8125rem; color: var(--ink-3); }
+
+.greeting-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
+.greeting-foot { margin: 0; color: var(--ink-3); font-size: 0.78125rem; }
+
+/* =========================================================================
+   Responsive
+   ========================================================================= */
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 7.5rem var(--gutter) 5rem;
+    gap: 2.5rem;
+  }
+  .hero-card { width: min(380px, 82vw); }
+  .step-row { grid-template-columns: minmax(0, 1fr); }
+  .step-row > *:nth-child(2),
+  .step-row > *:nth-child(3) { margin-top: 0; }
+  .devs-inner { grid-template-columns: minmax(0, 1fr); }
+  .lightbox { grid-template-columns: minmax(0, 1fr); }
+  .lightbox-card[data-orientation='portrait'] { width: min(240px, 62vw); }
+}
+
+@media (max-width: 560px) {
+  .gift-names { grid-template-columns: minmax(0, 1fr); }
+  .hero-actions .btn, .greeting-actions .btn { width: 100%; justify-content: center; }
+}
+
+
+/* =========================================================================
+   Landing — a single fold, built as a stage
+   ========================================================================= */
+
+.landing {
+  position: relative;
+  z-index: var(--z-stage);
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 7rem var(--gutter) 8rem;
+  overflow: hidden;
+}
+
+/* The cards receding into the dark behind the real one. */
+.field { position: absolute; inset: 0; pointer-events: none; }
+
+.ghost {
+  position: absolute;
+  display: block;
+  translate: -50% -50%;
+  scale: var(--g-scale, 1);
+  filter: blur(var(--g-blur, 0));
+  opacity: var(--g-opacity, 0.4);
+  will-change: transform;
+}
+.ghost img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  box-shadow: var(--edge), 0 30px 60px -30px #000;
+}
+.ghost[data-shape='wide'] { width: 300px; height: 200px; }
+.ghost[data-shape='tall'] { width: 190px; height: 266px; }
+.ghost[data-shape='square'] { width: 224px; height: 224px; }
+
+/* Darkens the edges so the field falls away instead of stopping. */
+.landing-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 52% at 50% 46%, transparent 30%, var(--paper) 88%),
+    radial-gradient(40% 34% at 74% 30%, var(--accent-wash), transparent 70%);
+}
+
+.landing-inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+  align-items: center;
+  gap: clamp(2rem, 5vw, 4.5rem);
+  width: 100%;
+  max-width: 1180px;
+}
+
+.hero-copy { display: grid; gap: 1.3rem; justify-items: start; }
+
+.hero-copy h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2.5rem, 5.6vw, 4.3rem);
+  line-height: 0.95;
+  letter-spacing: -0.052em;
+  text-wrap: balance;
+}
+
+/* The accent word wears the ridges it is describing. */
+.hero-copy h1 em {
+  position: relative;
+  font-style: normal;
+  color: var(--accent);
+}
+.hero-copy h1 em::after {
+  content: '';
+  position: absolute;
+  inset: 0.08em 0 0.12em;
+  /* Just enough ridge to read as a lens. Any denser and it eats the word. */
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--paper) 52%, transparent) 0 1px,
+    transparent 1px 7px
+  );
+  pointer-events: none;
+}
+
+.hero-sub {
+  margin: 0;
+  max-width: 42ch;
+  color: var(--ink-2);
+  font-size: clamp(0.9375rem, 1.25vw, 1.0625rem);
+  text-wrap: pretty;
+}
+
+.hero-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.hero-foot { margin: 0; color: var(--ink-3); font-size: 0.8125rem; }
+.hero-card { width: min(400px, 100%); justify-self: center; }
+
+/* =========================================================================
+   Nav links
+   ========================================================================= */
+
+.nav-links { display: flex; align-items: center; gap: 0.1rem; }
+
+.nav-link {
+  padding: 0.45rem 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 320ms var(--ease), color 320ms var(--ease);
+}
+.nav-link:hover { background: var(--accent-wash); color: var(--ink); }
+
+/* =========================================================================
+   Section panels
+   ========================================================================= */
+
+.panel-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  padding: max(4.5rem, 8dvh) var(--gutter) 0;
+  background: color-mix(in oklab, var(--paper-2) 56%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+.view {
+  display: flex;
+  flex-direction: column;
+  width: min(1040px, 100%);
+  max-height: 100%;
+  padding: 0.45rem 0.45rem 0;
+  border-radius: 2rem 2rem 0 0;
+  background: var(--glass);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid var(--hair);
+  border-bottom: 0;
+  box-shadow: var(--edge), var(--cast-lg);
+}
+
+.view-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.35rem 1.35rem 1rem;
+}
+.view-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+  letter-spacing: -0.042em;
+  line-height: 1.02;
+}
+.view-head p { margin: 0.35rem 0 0; color: var(--ink-2); font-size: 0.9375rem; }
+.view-head .icon-btn { margin-left: auto; }
+
+.view-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 1.35rem 2.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hair-2) transparent;
+}
+
+/* =========================================================================
+   Panel contents
+   ========================================================================= */
+
+.steps-list { display: grid; gap: 0.75rem; }
+
+.step {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.2rem 1rem;
+  align-items: baseline;
+  padding: 1.15rem 1.25rem;
+  border-radius: 1.15rem;
+  background: var(--glass-2);
+  border: 1px solid var(--hair);
+  box-shadow: var(--edge);
+}
+.step h3 { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+.step p { grid-column: 2; margin: 0; color: var(--ink-2); font-size: 0.875rem; text-wrap: pretty; }
+.step-n {
+  grid-row: span 2;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--accent);
+}
+.steps-foot {
+  margin: 0.75rem 0 0;
+  max-width: 62ch;
+  color: var(--ink-3);
+  font-size: 0.875rem;
+  text-wrap: pretty;
+}
+
+.devs-view { display: grid; gap: 1.1rem; justify-items: start; }
+.devs-view p { margin: 0; max-width: 60ch; color: var(--ink-2); font-size: 0.9375rem; }
+.devs-view .devs-code { width: 100%; }
+.devs-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.wall { display: grid; gap: 1.15rem; }
+.wall-lede { margin: 0; max-width: 62ch; color: var(--ink-2); font-size: 0.9375rem; }
+
+.greeting-from {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+}
+
+/* =========================================================================
+   Landing responsive
+   ========================================================================= */
+
+@media (max-width: 900px) {
+  .landing { padding: 6.5rem var(--gutter) 7rem; }
+  .landing-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.25rem;
+    text-align: center;
+    justify-items: center;
+  }
+  .hero-copy { justify-items: center; }
+  .hero-card { width: min(320px, 74vw); }
+  .ghost { opacity: calc(var(--g-opacity, 0.4) * 0.55); }
+  .nav-links { display: none; }
+  .view { border-radius: 1.5rem 1.5rem 0 0; }
+}
+
+@media (max-width: 560px) {
+  .hero-copy h1 { font-size: clamp(2.1rem, 10vw, 2.8rem); }
+  .hero-card { width: min(260px, 66vw); }
+}

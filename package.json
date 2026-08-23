@@ -1,0 +1,86 @@
+{
+  "name": "lenticard",
+  "version": "0.1.0",
+  "description": "Give someone a lenticular card they have to tilt. Two to six images become one card that changes as it moves, shareable by link and embeddable as a React component, a web component, or one function.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "keywords": [
+    "lenticular",
+    "greeting-card",
+    "gift",
+    "webgl",
+    "card",
+    "parallax",
+    "tilt",
+    "react",
+    "web-component",
+    "shader"
+  ],
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/lenticard.cjs",
+  "module": "./dist/lenticard.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/lenticard.js",
+      "require": "./dist/lenticard.cjs"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/lenticard-react.js",
+      "require": "./dist/lenticard-react.cjs"
+    },
+    "./element": {
+      "types": "./dist/element/lenticular-card.d.ts",
+      "import": "./dist/lenticard-element.js"
+    },
+    "./dist/*": "./dist/*"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:lib && npm run build:element && npm run build:studio",
+    "build:studio": "vite build",
+    "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json",
+    "build:element": "vite build --config vite.element.config.ts && node scripts/copy-element.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=17",
+    "react-dom": ">=17"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@phosphor-icons/react": "^2.1.10",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "gifenc": "^1.0.3",
+    "motion": "^12.0.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VaibhavVishal07/lenticard.git"
+  },
+  "homepage": "https://vaibhavvishal07.github.io/lenticard/",
+  "bugs": {
+    "url": "https://github.com/VaibhavVishal07/lenticard/issues"
+  },
+  "author": "Vaibhav Vishal"
+}

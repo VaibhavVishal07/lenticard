@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-studio
+.DS_Store
+*.local
+.vite
+public/lenticard-element.iife.js
+
+.env
+.env.local
+
+# Locally installed agent skills, not part of this project
+.agents/
+.claude/
+skills-lock.json

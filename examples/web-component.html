@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lenticard · web component example</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        gap: 32px;
+        padding: 8vmin 6vmin;
+        background: radial-gradient(120% 90% at 50% 0%, #1b2136, #06070d 70%);
+        color: #e8ecf7;
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      h1 { font-size: 1.05rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+      p { margin: 0; color: #8b92ad; font-size: 0.85rem; max-width: 46ch; text-align: center; }
+      .row { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; align-items: start; }
+      .wide { width: min(460px, 84vw); }
+      .tall { width: min(300px, 60vw); }
+    </style>
+  </head>
+  <body>
+    <h1>lenticard &middot; web component</h1>
+    <p>
+      Run <code>npm run build:element</code> first. Move across a card to change
+      the viewing angle; leave it alone and it sweeps on its own.
+    </p>
+
+    <div class="row">
+      <lenticular-card id="wide" class="wide" caption="Landscape frames &rarr; horizontal card"></lenticular-card>
+      <lenticular-card id="tall" class="tall" lenticules="130" caption="Portrait frames &rarr; vertical card"></lenticular-card>
+    </div>
+
+    <script src="../dist/lenticard-element.iife.js"></script>
+    <script>
+      // Frames are drawn here rather than shipped as files, so the example has
+      // no assets to fetch and works straight off the filesystem.
+      function frame(width, height, step) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        const hue = 20 + step * 105;
+
+        const sky = ctx.createLinearGradient(0, 0, 0, height);
+        sky.addColorStop(0, `hsl(${hue} 78% 62%)`);
+        sky.addColorStop(1, `hsl(${hue + 40} 55% 24%)`);
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, width, height);
+
+        // The disc travels with the step, so the flip is unmistakable.
+        ctx.fillStyle = `hsl(${hue + 60} 95% 88%)`;
+        ctx.beginPath();
+        ctx.arc(
+          width * (0.26 + step * 0.24),
+          height * (0.3 + step * 0.12),
+          Math.min(width, height) * 0.12,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+
+        ctx.fillStyle = `hsl(${hue + 20} 45% 16%)`;
+        ctx.beginPath();
+        ctx.moveTo(0, height);
+        for (let x = 0; x <= width; x += 6) {
+          const p = (x + step * width * 0.08) / width;
+          ctx.lineTo(x, height * 0.72 - Math.sin(p * Math.PI * 3) * height * 0.1);
+        }
+        ctx.lineTo(width, height);
+        ctx.fill();
+
+        return canvas.toDataURL('image/jpeg', 0.9);
+      }
+
+      // Setting `.images` as a property takes anything the library accepts —
+      // data URLs here, but File objects from an <input> work identically.
+      document.getElementById('wide').images = [0, 1, 2].map((i) => frame(1200, 800, i));
+      document.getElementById('tall').images = [0, 1, 2].map((i) => frame(800, 1200, i));
+    </script>
+  </body>
+</html>
