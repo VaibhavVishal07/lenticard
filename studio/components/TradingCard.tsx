@@ -11,6 +11,8 @@ interface TradingCardProps {
   parallax: number;
   blend: number;
   sheen: number;
+  /** 'none' when something else drives the angle, 'pointer' when nothing does. */
+  drive?: 'none' | 'pointer';
   onError?: (error: Error) => void;
 }
 
@@ -28,7 +30,7 @@ interface TradingCardProps {
  */
 export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
   function TradingCard(
-    { photos, theme, copy, layout, lenticules, parallax, blend, sheen, onError },
+    { photos, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
     ref,
   ) {
     const art = (fill: boolean): ReactNode => (
@@ -36,6 +38,8 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
         <LenticularCard
           ref={ref}
           images={photos}
+          width="100%"
+          style={{ height: '100%' }}
           axis="vertical"
           orientation={fill ? 'portrait' : 'landscape'}
           lenticules={lenticules}
@@ -44,8 +48,8 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           sheen={sheen}
           interlace={0.46}
           lens={0.72}
-          motion="none"
-          tilt={0}
+          motion={drive}
+          tilt={drive === 'pointer' ? 9 : 0}
           float={0}
           radius={0}
           fit="cover"

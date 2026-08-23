@@ -157,9 +157,15 @@ export function createLenticularCard(
       measure();
 
       engine.setFrames(loaded);
-      // A card at rest stops drawing after a few idle frames. Decoding real
-      // images takes longer than that, so by the time the textures land the
-      // loop is already parked and nothing would ever paint them.
+
+      // Paint once, here, synchronously. The animation loop is not guaranteed
+      // to be running when textures land — the card may be off-screen, in a
+      // background tab, or simply parked because nothing has moved — and a card
+      // that has never drawn is a black rectangle. One direct render means the
+      // card is correct the instant it is looked at, whatever the loop is doing.
+      state.axis = axis === 'vertical' ? 0 : 1;
+      engine.render(state);
+
       idleFrames = 0;
       start();
       root.dataset.state = 'ready';
@@ -184,6 +190,12 @@ export function createLenticularCard(
     // costs more than twice the fill rate.
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     engine.resize(width, height, dpr);
+    // Resizing clears the drawing buffer, so anything already on screen is gone
+    // until the next draw. Repaint here rather than waiting for a loop that may
+    // not be running.
+    state.axis = axis === 'vertical' ? 0 : 1;
+    engine.render(state);
+    start();
     // The printed-ridge overlay is a CSS gradient, so it only lines up with the
     // shader's ridges if it is told how wide one actually is.
     const along = axis === 'vertical' ? width : height;
@@ -211,8 +223,7 @@ export function createLenticularCard(
     fit: config.fit,
   };
 
-  function frame(now: number): void {
-    raf = requestAnimationFrame(frame);
+  function tick(now: number): void {
     const dt = last ? Math.min((now - last) / 1000, 0.1) : 1 / 60;
     last = now;
 
@@ -247,9 +258,21 @@ export function createLenticularCard(
     if (moved) idleFrames = 0;
     else idleFrames++;
     if (idleFrames < 3) engine.render(state);
+  }
 
+  function frame(now: number): void {
+    raf = requestAnimationFrame(frame);
+    tick(now);
     if (!visible || document.hidden) stop();
   }
+
+  // requestAnimationFrame is throttled hard in a background tab and on some
+  // low-power modes, which would leave the card frozen under the pointer. If a
+  // frame has not run recently, drive one straight off the input event.
+  function pump(): void {
+    if (performance.now() - last > 90) tick(performance.now());
+  }
+  card.addEventListener('pointermove', pump, { passive: true });
 
   function start(): void {
     if (raf || destroyed || !visible || document.hidden) return;
@@ -273,7 +296,14 @@ export function createLenticularCard(
   // Embeds live far down other people's pages; don't burn a rAF loop off-screen.
   const intersection = new IntersectionObserver(
     (entries) => {
-      visible = entries.some((entry) => entry.isIntersecting);
+      const entry = entries[entries.length - 1];
+      // A zero-sized box never intersects anything. That is a layout state, not
+      // a visibility one — a card inside a collapsed parent, or one measured
+      // before its height resolves — and latching invisible on it parks the
+      // loop for good, which is exactly how a card ends up permanently black.
+      const box = entry.boundingClientRect;
+      if (box.width === 0 || box.height === 0) return;
+      visible = entry.isIntersecting;
       if (visible) start();
     },
     { threshold: 0 },
@@ -366,6 +396,7 @@ export function createLenticularCard(
       destroyed = true;
       stop();
       document.removeEventListener('visibilitychange', onVisibility);
+      card.removeEventListener('pointermove', pump);
       resizeObserver.disconnect();
       intersection.disconnect();
       motion.destroy();

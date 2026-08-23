@@ -209,6 +209,7 @@ export default function App() {
                   theme={cardTheme}
                   copy={copy}
                   layout="fullart"
+                  drive="pointer"
                   lenticules={settings.lenticules}
                   parallax={settings.parallax}
                   blend={settings.blend}

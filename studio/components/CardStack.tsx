@@ -25,7 +25,7 @@ interface CardStackProps {
  * the belt to pick something up.
  */
 export function CardStack({ entries, live }: CardStackProps) {
-  const [held, setHeld] = useState<string | null>(null);
+  const [held, setHeld] = useState<string | null>(entries[0]?.id ?? null);
 
   const slot = useCallback(
     (entry: StackEntry, key: string) => {
@@ -36,7 +36,9 @@ export function CardStack({ entries, live }: CardStackProps) {
           key={key}
           data-held={isHeld}
           onPointerEnter={() => setHeld(entry.id)}
-          onPointerLeave={() => setHeld((current) => (current === entry.id ? null : current))}
+          onPointerLeave={() =>
+            setHeld((current) => (current === entry.id ? entries[0]?.id ?? null : current))
+          }
         >
           <div className="stack-label" style={{ ['--tint' as string]: entry.tint }}>
             <span className="stack-set">{entry.set}</span>
