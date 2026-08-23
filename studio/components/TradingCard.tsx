@@ -4,9 +4,10 @@ import type { CardCopy, CardLayout, CardTheme } from '../lib/themes';
 
 interface TradingCardProps {
   photos: string[];
-  /** A flat image instead of the lens. The column runs four templates at
-      once and browsers cap live WebGL contexts, so only the held one is real. */
-  still?: string;
+  /** Views of the print instead of a live lens: left tilt, straight on,
+      right tilt, cross-faded in CSS. The belt runs eight cases and browsers cap
+      live contexts, so only one of them is real WebGL. */
+  still?: string | string[];
   theme: CardTheme;
   copy: CardCopy;
   layout: CardLayout;
@@ -40,7 +41,17 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
     const art = (fill: boolean): ReactNode => (
       <div className="tc-art" data-fill={fill}>
         {still ? (
-          <img className="tc-still" src={still} alt="" loading="lazy" />
+          (Array.isArray(still) ? still : [still]).map((src, i, all) => (
+            <img
+              key={i}
+              className="tc-still"
+              data-views={all.length}
+              style={{ ['--view' as string]: i }}
+              src={src}
+              alt=""
+              loading="lazy"
+            />
+          ))
         ) : (
         <LenticularCard
           ref={ref}

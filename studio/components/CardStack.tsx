@@ -9,6 +9,9 @@ export interface StackEntry {
   still: string;
   name: string;
   set: string;
+  /** Which woven set this case is showing, so the belt can hold more than
+      one subject. */
+  art: string;
   /** Which template this slab is showing off. */
   layout: CardLayout;
   /** And what it arrives in, so the column shows both axes at once. */

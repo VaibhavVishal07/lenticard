@@ -1,26 +1,29 @@
 /**
- * A lenticular print, standing still.
+ * A lenticular print, drawn three times.
  *
- * The column used to hold plain photographs and swap in a live WebGL lens when
- * you pointed at one. That swap is a canvas mounting, sizing, uploading three
- * textures and only then painting — which is the jump you see in the middle of
- * the card. And a plain photograph does not look like the object anyway: a
- * lenticular sheet at rest is already woven, whether or not anything is moving.
+ * The belt cannot hold a live WebGL lens per case — browsers cap contexts at
+ * around sixteen and a moving belt runs straight through that — and swapping a
+ * still for a canvas when the pointer arrives is a mount, a resize, three
+ * texture uploads and only then a paint, which is a visible jump in the middle
+ * of the card.
  *
- * So the still is the weave. Vertical strips cut in the same order the shader
- * interlaces them, with the ridge shading a lens sheet has, drawn once into a
- * canvas and handed round as an image. No context per card, nothing to swap,
- * and every case in the belt reads as a printed card rather than a picture of
- * one.
+ * So the print is drawn as three views: left tilt, straight on, right tilt.
+ * Each one favours a frame and weaves its neighbours through it in strips, the
+ * way a wide interlace on a real sheet does — which is why a lenticular card
+ * looks woven even when nothing is moving. Cross-fading the three in CSS is
+ * the flip. No context, nothing to swap, and every case in the belt moves.
  */
 
 /**
  * Coarser than the shader's 160, on purpose. The live card renders at device
  * resolution and antialiases each ridge in the fragment shader; a still is a
  * bitmap the browser scales down with a box filter, and 160 ridges at the size
- * a case is drawn in the belt come back as moire rather than as a lens.
+ * a case is drawn come back as moire rather than as a lens.
  */
 const RIDGES = 96;
+
+/** Left tilt, straight on, right tilt. The three the UI already names. */
+export const PHASES = 3;
 
 function load(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -40,70 +43,113 @@ function contain(img: HTMLImageElement, w: number, h: number) {
   return { dx: (w - dw) / 2, dy: (h - dh) / 2, dw, dh };
 }
 
-export async function interlacedStill(
+export async function interlacedViews(
   urls: string[],
   width = 630,
   height = 880,
-): Promise<string> {
-  const frames = await Promise.all(urls.map(load));
+): Promise<string[]> {
+  const frames = await Promise.all(urls.slice(0, 6).map(load));
   if (!frames.length) throw new Error('An interlace needs at least one frame');
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('This browser has no 2D canvas');
-
-  ctx.fillStyle = '#05060a';
-  ctx.fillRect(0, 0, width, height);
 
   const boxes = frames.map((img) => contain(img, width, height));
   const strip = width / RIDGES;
+  const last = frames.length - 1;
 
-  for (let i = 0; i < RIDGES; i++) {
-    const frame = i % frames.length;
-    const img = frames[frame];
-    const { dx, dy, dw, dh } = boxes[frame];
+  const views: string[] = [];
+
+  for (let view = 0; view < PHASES; view++) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('This browser has no 2D canvas');
+
+    // The frame this angle favours, from full left tilt to full right.
+    const lead = Math.round((view / Math.max(1, PHASES - 1)) * last);
+
+    ctx.fillStyle = '#05060a';
+    ctx.fillRect(0, 0, width, height);
+
+    const draw = (index: number) => {
+      const { dx, dy, dw, dh } = boxes[index];
+      ctx.drawImage(frames[index], dx, dy, dw, dh);
+    };
+
+    draw(lead);
+
+    // The neighbours, woven through it. A lens with a wide interlace never
+    // shows one frame cleanly — that is the whole reason the surface reads as
+    // a lens rather than as a photograph behind glass.
+    //
+    // All of a frame's strips go into one path and it is drawn once. Clipping
+    // and drawing per strip is ninety-six full-size draws per frame per view,
+    // which locks the main thread for seconds before the page can paint.
+    if (frames.length > 1) {
+      ctx.save();
+      ctx.globalAlpha = 0.34;
+      for (let f = 0; f < frames.length; f++) {
+        if (f === lead) continue;
+        const path = new Path2D();
+        for (let i = 0; i < RIDGES; i++) {
+          if ((lead + i) % frames.length !== f) continue;
+          // Half a pixel of overlap, or the seams show as a grid.
+          path.rect(i * strip, 0, strip + 0.5, height);
+        }
+        ctx.save();
+        ctx.clip(path);
+        draw(f);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    // The ridges: each lenticule is a tiny cylinder, bright down one side and
+    // dark down the other. Without this the strips read as a scanning fault
+    // rather than as a surface with a shape.
+    const tile = document.createElement('canvas');
+    tile.width = Math.max(1, Math.ceil(strip));
+    tile.height = 1;
+    const tileCtx = tile.getContext('2d');
+    if (tileCtx) {
+      const ridge = tileCtx.createLinearGradient(0, 0, tile.width, 0);
+      ridge.addColorStop(0, 'rgba(0, 0, 0, 0.2)');
+      ridge.addColorStop(0.42, 'rgba(255, 255, 255, 0.09)');
+      ridge.addColorStop(0.62, 'rgba(255, 255, 255, 0.04)');
+      ridge.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
+      tileCtx.fillStyle = ridge;
+      tileCtx.fillRect(0, 0, tile.width, 1);
+      const pattern = ctx.createPattern(tile, 'repeat');
+      if (pattern) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'overlay';
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+      }
+    }
+
+    // Split colour, swinging with the angle — the band sits where the light
+    // would catch the sheet at this tilt, not in the same place every view.
+    const offset = (view / PHASES - 0.5) * width * 1.2;
+    const foil = ctx.createLinearGradient(offset, height, width + offset, 0);
+    foil.addColorStop(0, 'rgba(92, 225, 255, 0)');
+    foil.addColorStop(0.32, 'rgba(123, 123, 255, 0.12)');
+    foil.addColorStop(0.5, 'rgba(255, 94, 207, 0.16)');
+    foil.addColorStop(0.68, 'rgba(92, 255, 176, 0.11)');
+    foil.addColorStop(1, 'rgba(255, 209, 102, 0)');
     ctx.save();
-    ctx.beginPath();
-    // Half a pixel of overlap, or the seams between strips show as a grid.
-    ctx.rect(i * strip, 0, strip + 0.5, height);
-    ctx.clip();
-    ctx.drawImage(img, dx, dy, dw, dh);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = foil;
+    ctx.fillRect(0, 0, width, height);
     ctx.restore();
+
+    views.push(canvas.toDataURL('image/jpeg', 0.88));
+    // Hand the thread back between views. Three of these back to back is long
+    // enough to be a visible stall on the first paint. A timer, not a frame:
+    // requestAnimationFrame never fires in a background tab, and this would
+    // then never finish.
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
   }
 
-  // The ridges themselves: each lenticule is a tiny cylinder, so it is bright
-  // down one side and dark down the other. Without this the strips read as a
-  // scanning artefact rather than as a surface with a shape.
-  const ridge = ctx.createLinearGradient(0, 0, strip, 0);
-  ridge.addColorStop(0, 'rgba(0, 0, 0, 0.16)');
-  ridge.addColorStop(0.42, 'rgba(255, 255, 255, 0.07)');
-  ridge.addColorStop(0.62, 'rgba(255, 255, 255, 0.03)');
-  ridge.addColorStop(1, 'rgba(0, 0, 0, 0.14)');
-  ctx.save();
-  ctx.globalCompositeOperation = 'overlay';
-  for (let i = 0; i < RIDGES; i++) {
-    ctx.save();
-    ctx.translate(i * strip, 0);
-    ctx.fillStyle = ridge;
-    ctx.fillRect(0, 0, strip, height);
-    ctx.restore();
-  }
-  ctx.restore();
-
-  // One diagonal band of split colour, which is what the sheet does to light.
-  const foil = ctx.createLinearGradient(0, height, width, 0);
-  foil.addColorStop(0, 'rgba(92, 225, 255, 0)');
-  foil.addColorStop(0.34, 'rgba(123, 123, 255, 0.09)');
-  foil.addColorStop(0.5, 'rgba(255, 94, 207, 0.12)');
-  foil.addColorStop(0.66, 'rgba(92, 255, 176, 0.08)');
-  foil.addColorStop(1, 'rgba(255, 209, 102, 0)');
-  ctx.save();
-  ctx.globalCompositeOperation = 'screen';
-  ctx.fillStyle = foil;
-  ctx.fillRect(0, 0, width, height);
-  ctx.restore();
-
-  return canvas.toDataURL('image/jpeg', 0.88);
+  return views;
 }

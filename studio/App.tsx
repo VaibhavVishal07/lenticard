@@ -18,7 +18,7 @@ import { CardStack, type StackEntry } from './components/CardStack';
 import { CASE_KINDS, Slab, type CaseKind } from './components/Slab';
 import { TradingCard } from './components/TradingCard';
 import { buildDefaultCard } from './lib/default-card';
-import { interlacedStill } from './lib/interlace';
+import { interlacedViews } from './lib/interlace';
 import { INITIAL, type CardSettings } from './lib/presets';
 import { decodePayload, type SharePayload } from './lib/share';
 import { clearLocation, hasCardInLocation, loadFromLocation } from './lib/stores';
@@ -152,47 +152,55 @@ export default function App() {
   const images = useMemo(() => photos.map((p) => p.url), [photos]);
 
   /**
-   * The belt's stills, woven once.
+   * The belt's prints, woven once per set.
    *
-   * Drawn from whatever the card currently holds, so the column is showing the
-   * same print the maker would produce rather than a stock photograph.
+   * Keyed by the set a case belongs to, so the column can hold more than one
+   * subject without every case being handed the same three frames. The card
+   * the maker is holding is woven too, so what the belt shows is the print
+   * that would actually come out.
    */
-  const [woven, setWoven] = useState<string | null>(null);
+  const [woven, setWoven] = useState<Record<string, string[]>>({});
   useEffect(() => {
-    if (images.length < 2) return;
+    const base = import.meta.env.BASE_URL;
+    const sets: Record<string, string[]> = {
+      astra: images.length >= 2 ? images : [],
+      max: [1, 2, 3].map((n) => base + 'cards/max-' + n + '.jpg'),
+    };
     let cancelled = false;
-    void interlacedStill(images)
-      .then((url) => {
-        if (!cancelled) setWoven(url);
-      })
-      .catch(() => {
-        /* the belt falls back to the plain frame */
-      });
+    for (const [name, urls] of Object.entries(sets)) {
+      if (urls.length < 2) continue;
+      void interlacedViews(urls)
+        .then((views) => {
+          if (!cancelled) setWoven((current) => ({ ...current, [name]: views }));
+        })
+        .catch(() => {
+          /* that set falls back to its plain frame */
+        });
+    }
     return () => {
       cancelled = true;
     };
   }, [images]);
 
-  // The column beside the pitch: one real card, the rest waiting for art.
   /**
    * The column is the range, not a queue of one card.
    *
-   * Four slabs, one per template, so the variations are on the page instead of
-   * behind a picker you have to open first. Only the one under the pointer is
+   * Eight slabs across four templates and four cases, so the variations are on
+   * the page instead of behind a picker you have to open first. Exactly one is
    * a live lens — browsers cap WebGL contexts at around sixteen and a belt of
-   * them would run straight through that.
+   * them would run straight through that. The rest carry woven prints.
    */
   const showcase = useMemo<StackEntry[]>(() => {
     const base = import.meta.env.BASE_URL;
     return [
-      { id: 's1', still: base + 'cards/astra-1.jpg', name: 'Astra Volt', set: 'FULL BLEED', layout: 'fullart', kind: 'slab', real: true },
-      { id: 's2', still: base + 'cards/astra-2.jpg', name: 'Picks Up At 3am', set: 'ROOKIE', layout: 'rookie', kind: 'toploader' },
-      { id: 's3', still: base + 'cards/astra-3.jpg', name: 'Called It', set: 'CHROME', layout: 'chrome', kind: 'pack' },
-      { id: 's4', still: base + 'cards/astra-1.jpg', name: 'Thirty, Somehow', set: 'REFRACTOR', layout: 'refractor', kind: 'sleeve' },
-      { id: 's5', still: base + 'cards/astra-2.jpg', name: 'Spare Keys', set: 'ROOKIE', layout: 'rookie', kind: 'slab' },
-      { id: 's6', still: base + 'cards/astra-3.jpg', name: 'Second Slice', set: 'FULL BLEED', layout: 'fullart', kind: 'pack' },
-      { id: 's7', still: base + 'cards/astra-1.jpg', name: 'Took The Room', set: 'REFRACTOR', layout: 'refractor', kind: 'toploader' },
-      { id: 's8', still: base + 'cards/astra-2.jpg', name: 'Yours, Obviously', set: 'CHROME', layout: 'chrome', kind: 'sleeve' },
+      { id: 's1', still: base + 'cards/astra-1.jpg', art: 'astra', name: 'Astra Volt', set: 'FULL BLEED', layout: 'fullart', kind: 'slab', real: true },
+      { id: 's2', still: base + 'cards/max-1.jpg', art: 'max', name: 'Verstappen', set: 'ROOKIE', layout: 'rookie', kind: 'toploader' },
+      { id: 's3', still: base + 'cards/astra-3.jpg', art: 'astra', name: 'Called It', set: 'CHROME', layout: 'chrome', kind: 'pack' },
+      { id: 's4', still: base + 'cards/max-2.jpg', art: 'max', name: 'Lights Out', set: 'REFRACTOR', layout: 'refractor', kind: 'sleeve' },
+      { id: 's5', still: base + 'cards/astra-2.jpg', art: 'astra', name: 'Spare Keys', set: 'ROOKIE', layout: 'rookie', kind: 'slab' },
+      { id: 's6', still: base + 'cards/max-3.jpg', art: 'max', name: 'Pole Position', set: 'FULL BLEED', layout: 'fullart', kind: 'pack' },
+      { id: 's7', still: base + 'cards/astra-1.jpg', art: 'astra', name: 'Took The Room', set: 'REFRACTOR', layout: 'refractor', kind: 'toploader' },
+      { id: 's8', still: base + 'cards/max-1.jpg', art: 'max', name: 'Turn One', set: 'CHROME', layout: 'chrome', kind: 'sleeve' },
     ];
   }, []);
   const ready = photos.length > 0 && !checking && held;
@@ -274,7 +282,7 @@ export default function App() {
                 return (
                   <TradingCard
                     photos={images}
-                    still={isLive ? undefined : woven ?? entry.still}
+                    still={isLive ? undefined : woven[entry.art] ?? entry.still}
                     theme={entryTheme}
                     copy={{ ...copyFor(entryTheme), title: entry.name }}
                     layout={entry.layout}

@@ -2309,3 +2309,97 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.16' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23c)'/%3E%3C/svg%3E");
   background-size: 140% 100%;
 }
+
+/* =========================================================================
+   The flip, without a lens
+
+   Three views of the print stacked on each other and cross-faded. Each holds
+   for a third of the cycle and hands over with a short overlap, so what you
+   see is the card turning rather than three pictures blinking. The negative
+   delay puts each layer a third of the way further round the same loop.
+   ========================================================================= */
+
+.tc-art .tc-still[data-views] {
+  position: absolute;
+  inset: 0;
+  animation: tc-turn 7.2s ease-in-out infinite;
+  animation-delay: calc(var(--view) * -2.4s);
+}
+
+@keyframes tc-turn {
+  0%, 26% { opacity: 1; }
+  33.4%, 92.6% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Standing still it is still a lenticular print — the weave does not need
+     the movement to be legible — so the middle view simply stays up. */
+  .tc-art .tc-still[data-views] { animation: none; opacity: 0; }
+  .tc-art .tc-still[data-views][style*='--view: 1'] { opacity: 1; }
+}
+
+/* =========================================================================
+   Plastic that reads as plastic
+
+   The film was doing too much: heavy bands, a noise layer over the top and a
+   tinted shell, which together came out blotchy and opaque. Plastic is mostly
+   nothing — you see the card through it. What is left is a thin sheen, one
+   soft highlight where a bag catches the light, and nothing else.
+   ========================================================================= */
+
+.slab[data-kind='sleeve'] .slab-shell,
+.slab[data-kind='pack'] .slab-shell,
+.slab[data-kind='toploader'] .slab-shell {
+  background: linear-gradient(
+    168deg,
+    rgba(214, 226, 240, 0.07),
+    rgba(255, 255, 255, 0.015) 46%,
+    rgba(190, 206, 226, 0.05)
+  );
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.slab[data-kind='sleeve'] .slab-crinkle,
+.slab[data-kind='pack'] .slab-crinkle {
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  background:
+    repeating-linear-gradient(
+      71deg,
+      rgba(255, 255, 255, 0) 0 7%,
+      rgba(255, 255, 255, 0.055) 9%,
+      rgba(255, 255, 255, 0) 11% 24%
+    ),
+    repeating-linear-gradient(
+      104deg,
+      rgba(255, 255, 255, 0) 0 11%,
+      rgba(255, 255, 255, 0.04) 13%,
+      rgba(255, 255, 255, 0) 15% 33%
+    ),
+    radial-gradient(120% 52% at 24% 6%, rgba(255, 255, 255, 0.1), transparent 60%);
+}
+/* The noise crease is what made it blotchy. Film is smooth. */
+.slab[data-kind='sleeve'] .slab-crinkle::after,
+.slab[data-kind='pack'] .slab-crinkle::after { display: none; }
+
+.slab[data-kind='sleeve'] .slab-flap {
+  background: linear-gradient(180deg, rgba(226, 236, 248, 0.13), rgba(190, 206, 226, 0.04));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+/* Nothing is printed on bare plastic. A toploader and a sleeve are empty —
+   they are a wrapper, not a document — so the case says nothing at all. */
+.slab[data-kind='toploader'] .lab-tray,
+.slab[data-kind='sleeve'] .lab-tray { display: none; }
+
+/* A sealed pack does carry a header, so that one keeps its line. */
+.slab[data-kind='pack'] .lab-tray {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.2));
+}
+
+/* With no foot strip to leave room for, the card sits square in the sleeve. */
+.slab[data-kind='toploader'] .slab-card { top: 8cqw; }
+.slab[data-kind='sleeve'] .slab-card { top: 14cqw; }
