@@ -97,6 +97,16 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = 'dark';
+
+    // ?card=470 sizes the home column, so a size can be tried and shared
+    // without a rebuild. Anything that is not a plain length is ignored —
+    // this writes straight into a custom property.
+    const want = new URLSearchParams(window.location.search).get('card');
+    if (want && /^[0-9]{2,4}(px|rem|vw)?$/.test(want)) {
+      const size = /^[0-9]+$/.test(want) ? want + 'px' : want;
+      document.documentElement.style.setProperty('--stack-card', size);
+    }
+
     const timer = window.setTimeout(() => setHeld(true), 1400);
     return () => window.clearTimeout(timer);
   }, []);

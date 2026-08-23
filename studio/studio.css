@@ -28,6 +28,16 @@
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* How wide a case in the home column is. Everything inside the case — the
+     card, the label, the type on both — is sized in cqw against this, so one
+     number scales the whole object rather than stretching a frame around a
+     fixed-size card.
+
+     Change it here, or try a size without a rebuild from the console:
+       document.documentElement.style.setProperty('--stack-card', '470px')
+     Add ?card=470 to the URL for the same thing on a page you can share. */
+  --stack-card: 390px;
   --gutter: clamp(1.25rem, 5vw, 2.5rem);
 
   /* The one accent, used everywhere. */
@@ -1850,4 +1860,23 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   right: 0;
   transform-origin: 100% 50%;
   transform: rotateY(-90deg) translateX(11px);
+}
+
+/* The home column reads its width from --stack-card, so the size of the case
+   is one number in one place. The clearance either side scales with it, or a
+   larger case leans under the pointer and gets sliced by the clip that makes
+   the belt loop. */
+.stage[data-stage='home'] > .stage-stack {
+  width: min(var(--stack-card), 100%);
+  padding-inline: calc(var(--stack-card) * 0.085);
+  margin-inline: calc(var(--stack-card) * -0.085);
+}
+
+@media (max-width: 940px) {
+  /* Their number still applies, capped so it cannot outgrow a phone. */
+  .stage[data-stage='home'] > .stage-stack {
+    width: min(var(--stack-card), 78vw);
+    padding-inline: 1.5rem;
+    margin-inline: -1.5rem;
+  }
 }
