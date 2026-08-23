@@ -2452,3 +2452,7 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   inset: calc(var(--stack-gap) * -0.45) -1.6rem;
   z-index: 0;
 }
+
+/* The pitch sits 30px further off the floor than the stage's own padding, so
+   the block reads as lifted rather than resting on the bottom edge. */
+.stage[data-stage='home'] .pitch { margin-bottom: 30px; }

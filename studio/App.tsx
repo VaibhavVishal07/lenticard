@@ -166,6 +166,7 @@ export default function App() {
       astra: images.length >= 2 ? images : [],
       max: [1, 2, 3].map((n) => base + 'cards/max-' + n + '.jpg'),
       chandra: [1, 2, 3].map((n) => base + 'cards/chandra-' + n + '.jpg'),
+      dragon: [1, 2, 3].map((n) => base + 'cards/dragon-' + n + '.jpg'),
     };
     let cancelled = false;
     for (const [name, urls] of Object.entries(sets)) {
@@ -196,12 +197,12 @@ export default function App() {
     return [
       { id: 's1', still: base + 'cards/astra-1.jpg', art: 'astra', name: 'Astra Volt', set: 'FULL BLEED', layout: 'fullart', kind: 'slab', real: true },
       { id: 's2', still: base + 'cards/chandra-1.jpg', art: 'chandra', name: 'Torch Of Defiance', set: 'FULL BLEED', layout: 'fullart', kind: 'toploader' },
-      { id: 's3', still: base + 'cards/max-1.jpg', art: 'max', name: 'Verstappen', set: 'ROOKIE', layout: 'rookie', kind: 'pack' },
-      { id: 's4', still: base + 'cards/astra-2.jpg', art: 'astra', name: 'Called It', set: 'REFRACTOR', layout: 'refractor', kind: 'sleeve' },
-      { id: 's5', still: base + 'cards/chandra-2.jpg', art: 'chandra', name: 'Cast A Spell', set: 'CHROME', layout: 'chrome', kind: 'slab' },
-      { id: 's6', still: base + 'cards/max-2.jpg', art: 'max', name: 'Lights Out', set: 'FULL BLEED', layout: 'fullart', kind: 'toploader' },
-      { id: 's7', still: base + 'cards/astra-3.jpg', art: 'astra', name: 'Spare Keys', set: 'ROOKIE', layout: 'rookie', kind: 'pack' },
-      { id: 's8', still: base + 'cards/chandra-3.jpg', art: 'chandra', name: 'Five Damage', set: 'REFRACTOR', layout: 'refractor', kind: 'sleeve' },
+      { id: 's3', still: base + 'cards/dragon-1.jpg', art: 'dragon', name: 'Flying 6/6', set: 'CHROME', layout: 'chrome', kind: 'pack' },
+      { id: 's4', still: base + 'cards/max-1.jpg', art: 'max', name: 'Verstappen', set: 'ROOKIE', layout: 'rookie', kind: 'sleeve' },
+      { id: 's5', still: base + 'cards/chandra-2.jpg', art: 'chandra', name: 'Cast A Spell', set: 'REFRACTOR', layout: 'refractor', kind: 'slab' },
+      { id: 's6', still: base + 'cards/dragon-2.jpg', art: 'dragon', name: 'Green Flame', set: 'FULL BLEED', layout: 'fullart', kind: 'toploader' },
+      { id: 's7', still: base + 'cards/astra-2.jpg', art: 'astra', name: 'Spare Keys', set: 'ROOKIE', layout: 'rookie', kind: 'pack' },
+      { id: 's8', still: base + 'cards/max-2.jpg', art: 'max', name: 'Lights Out', set: 'CHROME', layout: 'chrome', kind: 'sleeve' },
     ];
   }, []);
   const ready = photos.length > 0 && !checking && held;
