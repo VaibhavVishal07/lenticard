@@ -2311,41 +2311,24 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 }
 
 /* =========================================================================
-   The flip, without a lens
+   The lens, under the pointer
 
-   Four angles of the print stacked on each other and dissolved through. The
-   previous version held each view for a third of the loop and then changed in
-   a few percent, which is a cut — next to the live card, which sweeps, it read
-   as a stutter.
+   Off the pointer a case in the belt is a photograph. The angles are stacked
+   over it at zero and only come up while you are on the card, blended by where
+   your cursor is — there is no timer, because eight cases flipping on their own
+   is eight things asking for attention.
 
-   Each layer now rises over a quarter of the loop, holds for a quarter, falls
-   over a quarter and waits out the rest, with the layers a quarter of a loop
-   apart. That guarantees exactly one layer is fully up at any moment, so the
-   card is never see-through, and its neighbours are always part way in or out,
-   so the change is continuous. Linear timing, because a lens turning at a
-   steady rate does not ease.
+   Opacity is written per frame from a pointer loop, so nothing here is
+   animated in CSS. What CSS owns is the stacking.
    ========================================================================= */
 
-.tc-art .tc-still[data-views] {
-  position: absolute;
-  inset: 0;
-  animation: tc-turn 9.6s linear infinite;
-  animation-delay: calc(var(--view) * -2.4s);
-}
-
-@keyframes tc-turn {
-  0% { opacity: 0; }
-  25% { opacity: 1; }
-  50% { opacity: 1; }
-  75% { opacity: 0; }
-  100% { opacity: 0; }
-}
+.tc-turn { position: absolute; inset: 0; }
+.tc-turn .tc-still { position: absolute; inset: 0; }
+.tc-turn .tc-view { opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Standing still it is still a lenticular print — the weave does not need
-     the movement to be legible — so one view simply stays up. */
-  .tc-art .tc-still[data-views] { animation: none; opacity: 0; }
-  .tc-art .tc-still[data-views][style*='--view: 1'] { opacity: 1; }
+  /* No turn at all: the photograph, and nothing that moves. */
+  .tc-turn .tc-view { display: none; }
 }
 
 /* =========================================================================

@@ -282,7 +282,8 @@ export default function App() {
                 return (
                   <TradingCard
                     photos={images}
-                    still={isLive ? undefined : woven[entry.art] ?? entry.still}
+                    still={isLive ? undefined : entry.still}
+                    views={isLive ? undefined : woven[entry.art]}
                     theme={entryTheme}
                     copy={{ ...copyFor(entryTheme), title: entry.name }}
                     layout={entry.layout}

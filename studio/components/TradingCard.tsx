@@ -1,13 +1,16 @@
 import { forwardRef, type ReactNode } from 'react';
 import { LenticularCard, type LenticularCardHandle } from '../../src/react/LenticularCard';
+import { Turn } from './Turn';
 import type { CardCopy, CardLayout, CardTheme } from '../lib/themes';
 
 interface TradingCardProps {
   photos: string[];
-  /** Views of the print instead of a live lens: left tilt, straight on,
-      right tilt, cross-faded in CSS. The belt runs eight cases and browsers cap
-      live contexts, so only one of them is real WebGL. */
-  still?: string | string[];
+  /** The plain photograph, shown when nothing is on the card. */
+  still?: string;
+  /** The print at four angles, blended by the cursor. Stands in for a live
+      lens on the belt, where browsers cap WebGL contexts well below the number
+      of cases on screen. */
+  views?: string[];
   theme: CardTheme;
   copy: CardCopy;
   layout: CardLayout;
@@ -35,23 +38,15 @@ interface TradingCardProps {
  */
 export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
   function TradingCard(
-    { photos, still, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
+    { photos, still, views, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
     ref,
   ) {
     const art = (fill: boolean): ReactNode => (
       <div className="tc-art" data-fill={fill}>
-        {still ? (
-          (Array.isArray(still) ? still : [still]).map((src, i, all) => (
-            <img
-              key={i}
-              className="tc-still"
-              data-views={all.length}
-              style={{ ['--view' as string]: i }}
-              src={src}
-              alt=""
-              loading="lazy"
-            />
-          ))
+        {views && still ? (
+          <Turn flat={still} views={views} />
+        ) : still ? (
+          <img className="tc-still" src={still} alt="" loading="lazy" />
         ) : (
         <LenticularCard
           ref={ref}
