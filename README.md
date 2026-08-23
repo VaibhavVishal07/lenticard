@@ -149,27 +149,18 @@ someone else's page has no business shipping a scene graph.
   pick one frame per angle, but the card still reads and still moves.
 - **Context loss is handled.** Textures and program rebuild on restore.
 - **Cross-origin frames** are requested with `crossOrigin="anonymous"` so
-  `toBlob()` and GIF export do not hit a tainted canvas.
+  `toBlob()` does not hit a tainted canvas.
 
 ## The editor
 
-`npm run dev` opens the tool the library was built for: drop in frames, reorder
-them, tune the lens against a live card, then export.
+`npm run dev` opens it. Drop in two to six photos, reorder them, adjust ridges,
+shift and shine, then send. The default card is three deliberately unrelated
+images, drawn on a canvas at runtime — a lenticular card only reads as one when
+the frames disagree. Swap `buildDefaultCard` for real photographs.
 
-- **Send it** — occasion, names, note, and a link.
-- **Get the code** — React, web component, vanilla, or JSON config.
-- **Self-contained .html** — one file with the frames *and* the runtime inlined.
-  No build step, no CDN, no server; it opens off the filesystem.
-- **Record GIF** — a looping sweep through the viewing angles.
-- **Save PNG** — the current angle as a still.
+## Optional: short links
 
-Every sample image, the demo trading card, the intro panels and the wall's
-starter set are drawn on a canvas at runtime, so the repo carries no binary
-assets and the demo works the moment the page opens.
-
-## Optional: short links and the wall
-
-Both need somewhere to put data. Copy `.env.example` to `.env` and point it at a
+Copy `.env.example` to `.env` and point it at a
 Supabase project:
 
 ```
@@ -178,15 +169,11 @@ VITE_SUPABASE_ANON_KEY=...
 VITE_SUPABASE_BUCKET=cards
 ```
 
-With those set, links become `?c=<id>` and the wall becomes shared. Posting to
-the wall then requires a Google sign-in and goes through a review queue —
-see [MODERATION.md](MODERATION.md) for the schema and the reasoning. Without
-them, links stay self-contained and the wall is a local showcase, which means a
-plain static deploy has no way for a stranger to publish an image.
+With those set, links become `?c=<id>` instead of carrying the card inline.
+Without them the link is self-contained, which is what the demo runs on.
 
-The Supabase paths are written against its REST API with no SDK, and have not
-been exercised against a live project; the fragment store is what the demo runs
-on.
+The Supabase path is written against its REST API with no SDK, and has not been
+exercised against a live project.
 
 ## Development
 

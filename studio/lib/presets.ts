@@ -3,89 +3,24 @@ import type { LenticularOptions } from '../../src/core/types';
 
 export type CardSettings = Pick<
   Required<LenticularOptions>,
-  | 'orientation'
-  | 'axis'
-  | 'lenticules'
-  | 'parallax'
-  | 'interlace'
-  | 'blend'
-  | 'sheen'
-  | 'lens'
-  | 'tilt'
-  | 'float'
-  | 'radius'
-  | 'motion'
-  | 'idleSweep'
-  | 'fit'
+  'orientation' | 'lenticules' | 'parallax' | 'blend' | 'sheen' | 'motion'
 >;
 
+/**
+ * Tuned for an obvious flip rather than a tasteful one. A near-zero blend makes
+ * the frames cut rather than dissolve, which is what a real lenticular card
+ * does and what makes the effect legible on a first glance.
+ */
 export const INITIAL: CardSettings = {
-  orientation: DEFAULTS.orientation,
-  axis: DEFAULTS.axis,
-  lenticules: DEFAULTS.lenticules,
-  parallax: DEFAULTS.parallax,
-  interlace: DEFAULTS.interlace,
-  blend: DEFAULTS.blend,
-  sheen: DEFAULTS.sheen,
-  lens: DEFAULTS.lens,
-  tilt: DEFAULTS.tilt,
-  float: DEFAULTS.float,
-  radius: DEFAULTS.radius,
-  motion: DEFAULTS.motion,
-  idleSweep: DEFAULTS.idleSweep,
-  fit: DEFAULTS.fit,
+  orientation: 'auto',
+  lenticules: 84,
+  parallax: 1.45,
+  blend: 0.08,
+  sheen: 0.5,
+  motion: 'pointer',
 };
 
-export interface Preset {
-  id: string;
-  label: string;
-  hint: string;
-  values: Partial<CardSettings>;
-}
-
-export const PRESETS: Preset[] = [
-  {
-    id: 'classic',
-    label: 'Classic flip',
-    hint: 'Coarse ridges, hard cut between frames',
-    values: { lenticules: 64, interlace: 0.3, blend: 0.12, sheen: 0.4, lens: 0.6, parallax: 1.15 },
-  },
-  {
-    id: 'depth',
-    label: 'Depth',
-    hint: 'Fine ridges, frames dissolve into each other',
-    values: { lenticules: 150, interlace: 0.14, blend: 0.7, sheen: 0.2, lens: 0.3, parallax: 0.85 },
-  },
-  {
-    id: 'holo',
-    label: 'Holo foil',
-    hint: 'Heavy sheen, strong refraction',
-    values: { lenticules: 190, interlace: 0.42, blend: 0.4, sheen: 0.85, lens: 0.9, parallax: 1.3 },
-  },
-  {
-    id: 'trading',
-    label: 'Trading card',
-    hint: 'Portrait, restrained motion, printed feel',
-    values: {
-      orientation: 'portrait',
-      lenticules: 110,
-      interlace: 0.2,
-      blend: 0.3,
-      sheen: 0.45,
-      lens: 0.5,
-      tilt: 11,
-      radius: 16,
-    },
-  },
-  {
-    id: 'flat',
-    label: 'Print',
-    hint: 'No sheen, no float — just the interlace',
-    values: { sheen: 0, lens: 0.35, float: 0, tilt: 9, interlace: 0.18, blend: 0.5 },
-  },
-];
-
-/** Only the values that differ from the library defaults are worth emitting. */
+/** Only what differs from the library defaults is worth sending. */
 export function diffFromDefaults(settings: CardSettings): Partial<CardSettings> {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(settings)) {
@@ -93,3 +28,14 @@ export function diffFromDefaults(settings: CardSettings): Partial<CardSettings> 
   }
   return out as Partial<CardSettings>;
 }
+
+/** The lens settings the card is always built with, whatever the user picks. */
+export const FIXED = {
+  interlace: 0.2,
+  lens: 0.55,
+  tilt: 15,
+  float: 9,
+  radius: 20,
+  idleSweep: 2200,
+  fit: 'cover',
+} as const;
