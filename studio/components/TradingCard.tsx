@@ -24,9 +24,10 @@ interface TradingCardProps {
  * can read — the lens refracts each ridge a little, and a name smeared across
  * sixty of them stops being a word.
  *
- * The five templates are different objects rather than one card recoloured:
- * the frame material, where the art sits, whether there is a border at all and
- * where the name goes all change between them.
+ * Four templates, and they are four different objects rather than one card
+ * recoloured: a full bleed, a bordered rookie, a dark chrome insert and a
+ * refractor. Each is drawn from a real card — what the stock is made of, where
+ * the window is cut, and where the name is struck all change between them.
  */
 export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
   function TradingCard(
@@ -72,91 +73,36 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           ['--accent' as string]: theme.accent,
         }}
       >
+        {/* --- full bleed: the picture is the card ------------------------ */}
         {layout === 'fullart' && (
           <div className="tc-body">
             {art(true)}
             <span className="tc-vign" aria-hidden />
-          </div>
-        )}
-
-        {layout === 'classic' && (
-          <div className="tc-body">
-            <div className="tc-bevel">
-              {art(false)}
-              <div className="tc-plate">
-                <span className="tc-eyebrow">{copy.stage}</span>
-                <h2 className="tc-name">{copy.title}</h2>
-              </div>
-            </div>
-            <div className="tc-rows">
-              {copy.moves.map((m, i) => (
-                <div className="tc-row" key={i}>
-                  <span className="tc-pips">
-                    {Array.from({ length: m.cost }, (_, p) => <i key={p} />)}
-                  </span>
-                  <span className="tc-row-name">{m.name}</span>
-                  <span className="tc-row-val">{m.value}</span>
-                </div>
-              ))}
-            </div>
-            <div className="tc-strip">
-              {['WEAK', 'RESIST', 'RETREAT'].map((k, i) => (
-                <span key={k}>
-                  <b>{k}</b>
-                  {copy.strip[i]}
-                </span>
-              ))}
-            </div>
-            <div className="tc-foot">
-              <span>{theme.set}</span>
-              <span>
-                {copy.statLabel} {copy.statValue} · {theme.rarity}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {layout === 'kaboom' && (
-          <div className="tc-body">
-            {art(true)}
-            <span className="tc-shout" aria-hidden>{theme.badge}</span>
-            <span className="tc-rc">{copy.statValue}</span>
-            <div className="tc-chrome">
-              <span className="tc-chrome-sm">{copy.stage.split('·')[0].trim()}</span>
-              <h2 className="tc-chrome-name">{copy.title}</h2>
-            </div>
-          </div>
-        )}
-
-        {layout === 'prism' && (
-          <div className="tc-body">
-            <div className="tc-cut">{art(false)}</div>
-            <div className="tc-neon" />
-            <div className="tc-prism-foot">
+            <span className="tc-hair" aria-hidden />
+            <div className="tc-fa-foot">
               <h2 className="tc-name">{copy.title}</h2>
-              <span className="tc-eyebrow">{theme.badge}</span>
-              <div className="tc-rows">
-                {copy.moves.map((m, i) => (
-                  <div className="tc-row" key={i}>
-                    <span className="tc-row-name">{m.name}</span>
-                    <span className="tc-row-val">{m.value}</span>
-                  </div>
-                ))}
-              </div>
+              <span className="tc-eyebrow">{copy.stage}</span>
             </div>
           </div>
         )}
 
-        {layout === 'retro' && (
+        {/* --- rookie: thick border, inner stock, struck name banner ------- */}
+        {layout === 'rookie' && (
           <div className="tc-body">
             <div className="tc-inner">
-              {art(false)}
+              <div className="tc-window">
+                {art(false)}
+                <span className="tc-seal" aria-hidden>
+                  {theme.glyph}
+                </span>
+              </div>
               <div className="tc-banner">
                 <h2 className="tc-name">{copy.title}</h2>
+                <span className="tc-eyebrow">{copy.stage}</span>
               </div>
-              <div className="tc-retro-foot">
-                <span className="tc-eyebrow">{theme.set}</span>
-                <span className="tc-eyebrow">
+              <div className="tc-ledger">
+                <span>{theme.set}</span>
+                <span>
                   {copy.statLabel} {copy.statValue}
                 </span>
               </div>
@@ -164,15 +110,42 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           </div>
         )}
 
-        {layout === 'museum' && (
+        {/* --- chrome: dark board, cut window, struck outline wordmark ----- */}
+        {layout === 'chrome' && (
           <div className="tc-body">
-            {art(false)}
-            <div className="tc-museum">
+            <span className="tc-hatch" aria-hidden />
+            <span className="tc-wordmark" aria-hidden>
+              {theme.badge}
+            </span>
+            <div className="tc-cut">{art(false)}</div>
+            <span className="tc-rail" aria-hidden>
+              {theme.set} · {theme.rarity}
+            </span>
+            <div className="tc-foot">
+              <div className="tc-foot-name">
+                <h2 className="tc-name">{copy.title}</h2>
+                <span className="tc-eyebrow">{copy.stage}</span>
+              </div>
+              <div className="tc-plaque">
+                <b>{copy.statValue}</b>
+                <span>{copy.statLabel}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- refractor: foil stock, octagon window, white name plate ----- */}
+        {layout === 'refractor' && (
+          <div className="tc-body">
+            <span className="tc-foil" aria-hidden />
+            <span className="tc-tab">{theme.badge}</span>
+            <div className="tc-cut">
+              <div className="tc-rule">{art(false)}</div>
+            </div>
+            <div className="tc-plate">
               <h2 className="tc-name">{copy.title}</h2>
-              <p className="tc-flavour">{copy.flavour}</p>
-              <span className="tc-rule" />
               <span className="tc-eyebrow">
-                {theme.set} · {theme.rarity}
+                {copy.stage} · {theme.rarity}
               </span>
             </div>
           </div>

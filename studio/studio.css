@@ -539,39 +539,36 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink), 0 6px 16px -6px #000;
 }
 
-.mini[data-tpl='classic'] .mini-face::after {
+.mini[data-tpl='fullart'] .mini-face::after {
   content: '';
   position: absolute;
-  inset: 4px 4px 18px;
-  background: rgba(0, 0, 0, 0.55);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+  inset: 3px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
-.mini[data-tpl='kaboom'] .mini-face::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(115deg, rgba(255,255,255,.5) 0 3px, transparent 3px 7px);
-}
-.mini[data-tpl='prism'] .mini-face::after {
+.mini[data-tpl='rookie'] .mini-face::after {
   content: '';
   position: absolute;
   inset: 5px;
-  background: var(--m2);
-  clip-path: polygon(0 0, 100% 0, 100% 72%, 74% 100%, 0 100%);
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.42);
+  box-shadow: 0 0 0 2px var(--m2), inset 0 -14px 0 -6px var(--m2);
 }
-.mini[data-tpl='retro'] .mini-face::after {
+.mini[data-tpl='chrome'] .mini-face::after {
   content: '';
   position: absolute;
-  inset: 6px;
-  border-radius: 3px;
-  background: rgba(0, 0, 0, 0.45);
-  box-shadow: 0 0 0 2px var(--m2);
+  inset: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 1px var(--m2);
+  clip-path: polygon(0 18%, 18% 0, 100% 0, 100% 82%, 82% 100%, 0 100%);
 }
-.mini[data-tpl='museum'] .mini-face::after {
+.mini[data-tpl='refractor'] .mini-face::after {
   content: '';
   position: absolute;
-  inset: 7px 7px 22px;
-  background: rgba(0, 0, 0, 0.28);
+  inset: 6px 6px 16px;
+  background: #0b0c0f;
+  box-shadow: 0 0 0 1.5px #d9b256;
+  clip-path: polygon(0 14%, 14% 0, 86% 0, 100% 14%, 100% 86%, 86% 100%, 14% 100%, 0 86%);
 }
 
 /* =========================================================================
@@ -1015,7 +1012,13 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 }
 
 /* =========================================================================
-   The card — five templates that are different objects
+   The card — four templates, four different objects
+
+   Every measurement is in cqw, so a card printed at 300px and the same card
+   printed at 90px in the column are the same design rather than the same
+   design with the type falling apart. The window cuts are clip-path on a
+   coloured wrapper with the art clipped again inside it: an inset shadow
+   would be clipped away along with the corner it was meant to draw.
    ========================================================================= */
 
 .tc { container-type: inline-size; width: 100%; }
@@ -1026,9 +1029,10 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   border-radius: 3cqw;
   overflow: hidden;
   display: grid;
+  isolation: isolate;
 }
 
-.tc-art { position: relative; overflow: hidden; }
+.tc-art { position: relative; overflow: hidden; min-height: 0; }
 .tc-art[data-fill='true'] { position: absolute; inset: 0; }
 
 .tc-name {
@@ -1041,226 +1045,292 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   text-overflow: ellipsis;
 }
 .tc-eyebrow {
-  font-size: 2.3cqw;
+  font-size: 2.2cqw;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* --- classic: silver bevel, plate under the art, stat strip -------------- */
-
-.tc[data-tpl='classic'] .tc-body {
-  grid-template-rows: 1fr auto auto auto;
-  gap: 1.6cqw;
-  padding: 3cqw;
-  background: linear-gradient(165deg, #eef0f3, #9aa1ac 44%, #d5d9df 70%, #7f858f);
+/* Cut corners, shared by chrome and refractor: two opposite corners for
+   chrome, all four for the refractor's octagon. */
+.tc[data-tpl='chrome'] .tc-cut,
+.tc[data-tpl='chrome'] .tc-cut .tc-art {
+  clip-path: polygon(
+    0 5cqw, 5cqw 0, 100% 0,
+    100% calc(100% - 5cqw), calc(100% - 5cqw) 100%, 0 100%
+  );
 }
-.tc[data-tpl='classic'] .tc-bevel {
-  display: grid;
-  grid-template-rows: 1fr auto;
-  border-radius: 1.4cqw;
-  overflow: hidden;
-  background: var(--board);
-  box-shadow: inset 0 0 0 0.5cqw rgba(255, 255, 255, 0.5), 0 1cqw 3cqw -1cqw rgba(0,0,0,.6);
-}
-.tc[data-tpl='classic'] .tc-plate {
-  display: grid;
-  gap: 0.2cqw;
-  padding: 1.6cqw 2cqw 1.8cqw;
-  background: linear-gradient(180deg, var(--b), color-mix(in oklab, var(--b) 70%, #000));
-  color: #fff;
-}
-.tc[data-tpl='classic'] .tc-name { font-size: 5.2cqw; }
-.tc[data-tpl='classic'] .tc-eyebrow { font-size: 2.1cqw; opacity: 0.8; }
-
-.tc-rows { display: grid; gap: 0.8cqw; }
-.tc-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 1.6cqw;
-  padding: 0.9cqw 1.4cqw;
-  border-radius: 1cqw;
-  background: rgba(10, 12, 16, 0.82);
-  color: #f2f4f8;
-}
-.tc-pips { display: flex; gap: 0.5cqw; }
-.tc-pips i { width: 2.6cqw; height: 2.6cqw; border-radius: 999px; background: var(--accent); }
-.tc-row-name { font-size: 3.2cqw; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tc-row-val { font-size: 4.2cqw; font-weight: 900; letter-spacing: -0.04em; }
-
-.tc-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1cqw;
-  padding: 1cqw 1.4cqw;
-  border-radius: 1cqw;
-  background: rgba(10, 12, 16, 0.68);
-  color: #f2f4f8;
-  font-size: 2.4cqw;
-}
-.tc-strip span { display: grid; gap: 0.1cqw; }
-.tc-strip b { font-size: 1.8cqw; letter-spacing: 0.1em; opacity: 0.6; font-weight: 700; }
-
-.tc-foot {
-  display: flex;
-  justify-content: space-between;
-  gap: 1.5cqw;
-  font-size: 2.1cqw;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #2a2e35;
+.tc[data-tpl='refractor'] .tc-cut,
+.tc[data-tpl='refractor'] .tc-rule,
+.tc[data-tpl='refractor'] .tc-cut .tc-art {
+  clip-path: polygon(
+    0 4.4cqw, 4.4cqw 0, calc(100% - 4.4cqw) 0, 100% 4.4cqw,
+    100% calc(100% - 4.4cqw), calc(100% - 4.4cqw) 100%, 4.4cqw 100%, 0 calc(100% - 4.4cqw)
+  );
 }
 
-/* --- kaboom: full bleed, wordmark over it -------------------------------- */
+/* --- full bleed: the picture is the card -------------------------------- */
 
-.tc[data-tpl='kaboom'] .tc-body { background: #05060a; }
-.tc[data-tpl='kaboom'] .tc-shout {
+.tc[data-tpl='fullart'] .tc-body { background: #05060a; }
+.tc[data-tpl='fullart'] .tc-vign {
   position: absolute;
-  top: 5cqw;
-  left: 5cqw;
-  right: 16cqw;
-  font-size: 11cqw;
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  line-height: 0.82;
-  color: var(--accent);
-  -webkit-text-stroke: 0.7cqw #08090c;
-  paint-order: stroke fill;
-  text-shadow: 0.8cqw 0.8cqw 0 rgba(0, 0, 0, 0.45);
+  inset: 0;
   pointer-events: none;
+  z-index: 5;
+  background:
+    radial-gradient(122% 88% at 50% 36%, transparent 52%, rgba(0, 0, 0, 0.46)),
+    linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, transparent 30%);
 }
-.tc[data-tpl='kaboom'] .tc-rc {
+/* The trim line a full-art card is cut with — set in from the edge, foil. */
+.tc[data-tpl='fullart'] .tc-hair {
   position: absolute;
-  top: 4cqw;
-  right: 4cqw;
-  display: grid;
-  place-items: center;
-  width: 11cqw;
-  height: 11cqw;
-  border-radius: 999px;
-  background: #fff;
-  color: #101216;
-  font-size: 4cqw;
-  font-weight: 900;
-  box-shadow: 0 0 0 0.6cqw var(--accent);
+  inset: 2.4cqw;
+  z-index: 6;
+  pointer-events: none;
+  border-radius: 1.5cqw;
+  box-shadow:
+    inset 0 0 0 0.3cqw rgba(255, 255, 255, 0.38),
+    inset 0 0 0 0.62cqw rgba(0, 0, 0, 0.34);
 }
-.tc[data-tpl='kaboom'] .tc-chrome {
+.tc[data-tpl='fullart'] .tc-fa-foot {
   position: absolute;
-  left: 4cqw;
-  right: 4cqw;
-  bottom: 4cqw;
+  left: 5.4cqw;
+  right: 5.4cqw;
+  bottom: 5.4cqw;
+  z-index: 7;
   display: grid;
-  gap: 0.3cqw;
-}
-.tc[data-tpl='kaboom'] .tc-chrome-sm {
-  font-size: 2.4cqw;
-  font-weight: 700;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+  gap: 0.9cqw;
   color: #fff;
-  opacity: 0.75;
+  text-shadow: 0 0.3cqw 1.4cqw rgba(0, 0, 0, 0.85);
 }
-.tc[data-tpl='kaboom'] .tc-chrome-name {
-  margin: 0;
-  font-size: 8cqw;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 0.9;
-  background: linear-gradient(180deg, #fff 20%, #9aa1ac 55%, #fff 90%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-stroke: 0.35cqw rgba(0, 0, 0, 0.5);
-  paint-order: stroke fill;
-}
+.tc[data-tpl='fullart'] .tc-name { font-size: 7.4cqw; text-transform: uppercase; }
+.tc[data-tpl='fullart'] .tc-eyebrow { color: var(--accent); }
 
-/* --- prism: angular cut panels on a dark board --------------------------- */
+/* --- rookie: thick border, coated stock, a struck banner ----------------- */
 
-.tc[data-tpl='prism'] .tc-body {
-  grid-template-rows: 1fr auto;
-  background: linear-gradient(160deg, #12161c, #05070a);
-  padding: 2.6cqw;
-  gap: 2cqw;
-}
-.tc[data-tpl='prism'] .tc-cut {
-  overflow: hidden;
-  clip-path: polygon(0 0, 100% 0, 100% 82%, 76% 100%, 0 100%);
-  background: #05070a;
-}
-.tc[data-tpl='prism'] .tc-neon {
-  position: absolute;
-  left: 2.6cqw;
-  right: 2.6cqw;
-  top: 62%;
-  height: 0.7cqw;
-  background: var(--accent);
-  box-shadow: 0 0 3cqw var(--accent);
-  transform: skewY(-4deg);
-}
-.tc[data-tpl='prism'] .tc-prism-foot { display: grid; gap: 1cqw; color: #eef1f5; }
-.tc[data-tpl='prism'] .tc-name { font-size: 6cqw; }
-.tc[data-tpl='prism'] .tc-eyebrow { color: var(--accent); }
-.tc[data-tpl='prism'] .tc-row {
-  grid-template-columns: 1fr auto;
-  background: rgba(255, 255, 255, 0.06);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 3cqw 100%);
-  padding-left: 3.4cqw;
-}
-
-/* --- retro: thick colour border, banner name ----------------------------- */
-
-.tc[data-tpl='retro'] .tc-body { background: var(--b); padding: 4cqw; }
-.tc[data-tpl='retro'] .tc-inner {
+.tc[data-tpl='rookie'] .tc-body { background: var(--b); padding: 3.4cqw; }
+.tc[data-tpl='rookie'] .tc-inner {
+  position: relative;
   display: grid;
   grid-template-rows: 1fr auto auto;
-  gap: 1.4cqw;
-  height: 100%;
-  padding: 2cqw;
   border-radius: 2cqw;
+  overflow: hidden;
   background: var(--a);
-  box-shadow: inset 0 0 0 0.6cqw rgba(0, 0, 0, 0.25);
+  padding: 2.8cqw 2.8cqw 0;
+  gap: 2.4cqw;
+  box-shadow: inset 0 0 0 0.4cqw rgba(0, 0, 0, 0.16);
 }
-.tc[data-tpl='retro'] .tc-art { border-radius: 1cqw; box-shadow: inset 0 0 0 0.5cqw rgba(0,0,0,.35); }
-.tc[data-tpl='retro'] .tc-banner {
-  padding: 1.4cqw 2cqw;
+.tc[data-tpl='rookie'] .tc-window {
+  position: relative;
+  min-height: 0;
   border-radius: 1cqw;
+  overflow: hidden;
+  box-shadow: 0 0 0 0.45cqw rgba(0, 0, 0, 0.42);
+}
+.tc[data-tpl='rookie'] .tc-window .tc-art { height: 100%; }
+/* The little pressed emblem that sits over the corner of the photo. */
+.tc[data-tpl='rookie'] .tc-seal {
+  position: absolute;
+  top: 2cqw;
+  right: 2cqw;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  width: 9cqw;
+  height: 9cqw;
+  border-radius: 999px;
+  background: var(--b);
+  color: var(--a);
+  font-size: 4.4cqw;
+  line-height: 1;
+  box-shadow:
+    0 0 0 0.5cqw var(--a),
+    0 0.5cqw 1.2cqw rgba(0, 0, 0, 0.45);
+}
+.tc[data-tpl='rookie'] .tc-banner {
+  margin-inline: -2.8cqw;
+  padding: 1.9cqw 3cqw 1.7cqw;
+  display: grid;
+  gap: 0.7cqw;
+  justify-items: center;
+  text-align: center;
   background: var(--board);
   color: var(--ink);
-  text-align: center;
+  box-shadow: inset 0 0.4cqw 0 rgba(255, 255, 255, 0.14);
 }
-.tc[data-tpl='retro'] .tc-name { font-size: 5.4cqw; }
-.tc[data-tpl='retro'] .tc-retro-foot {
+.tc[data-tpl='rookie'] .tc-name { font-size: 6.2cqw; text-transform: uppercase; max-width: 100%; }
+.tc[data-tpl='rookie'] .tc-eyebrow { font-size: 2cqw; color: var(--accent); max-width: 100%; }
+.tc[data-tpl='rookie'] .tc-ledger {
   display: flex;
   justify-content: space-between;
   gap: 1.5cqw;
-  color: color-mix(in oklab, var(--board) 78%, transparent);
+  padding: 1.3cqw 0.4cqw 1.5cqw;
+  font-family: var(--font-mono);
+  font-size: 2cqw;
+  letter-spacing: 0.09em;
+  color: rgba(0, 0, 0, 0.55);
 }
-.tc[data-tpl='retro'] .tc-eyebrow { font-size: 2.2cqw; }
 
-/* --- museum: white stock, hairline, nothing else ------------------------- */
+/* --- chrome: black board, cut window, outline wordmark ------------------- */
 
-.tc[data-tpl='museum'] .tc-body {
-  grid-template-rows: 1fr auto;
-  background: #f7f6f2;
-  padding: 4cqw 4cqw 0;
-  gap: 3cqw;
+.tc[data-tpl='chrome'] .tc-body {
+  grid-template-rows: auto 1fr auto;
+  gap: 2.2cqw;
+  padding: 4cqw 3.4cqw 3.4cqw 6.6cqw;
+  background: linear-gradient(158deg, #171a21 0%, #090a0e 52%, #04050a 100%);
+  color: #eef1f6;
 }
-.tc[data-tpl='museum'] .tc-art { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18); }
-.tc[data-tpl='museum'] .tc-museum { display: grid; gap: 1.2cqw; padding-bottom: 4cqw; color: #16181c; }
-.tc[data-tpl='museum'] .tc-name { font-size: 5cqw; font-weight: 700; }
-.tc[data-tpl='museum'] .tc-flavour {
-  margin: 0;
-  font-size: 2.7cqw;
-  line-height: 1.45;
-  color: rgba(22, 24, 28, 0.66);
+.tc[data-tpl='chrome'] .tc-hatch {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    116deg,
+    rgba(255, 255, 255, 0.055) 0 1.1cqw,
+    transparent 1.1cqw 3.8cqw
+  );
+  mask-image: linear-gradient(200deg, #000 12%, transparent 62%);
 }
-.tc[data-tpl='museum'] .tc-rule { height: 1px; background: rgba(22, 24, 28, 0.22); }
-.tc[data-tpl='museum'] .tc-eyebrow { font-size: 2.1cqw; color: rgba(22, 24, 28, 0.5); }
+.tc[data-tpl='chrome'] .tc-wordmark {
+  position: relative;
+  z-index: 1;
+  font-size: 9.5cqw;
+  font-weight: 900;
+  line-height: 0.86;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 0.34cqw rgba(255, 255, 255, 0.52);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tc[data-tpl='chrome'] .tc-cut {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  padding: 0.45cqw;
+  background: var(--accent);
+}
+.tc[data-tpl='chrome'] .tc-cut .tc-art { height: 100%; }
+.tc[data-tpl='chrome'] .tc-rail {
+  position: absolute;
+  left: 2.1cqw;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: var(--font-mono);
+  font-size: 1.9cqw;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+}
+.tc[data-tpl='chrome'] .tc-foot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2cqw;
+}
+.tc[data-tpl='chrome'] .tc-foot-name { display: grid; gap: 0.8cqw; min-width: 0; }
+.tc[data-tpl='chrome'] .tc-name { font-size: 6.4cqw; text-transform: uppercase; }
+.tc[data-tpl='chrome'] .tc-eyebrow { font-size: 2cqw; color: var(--accent); }
+.tc[data-tpl='chrome'] .tc-plaque {
+  flex-shrink: 0;
+  display: grid;
+  justify-items: center;
+  gap: 0.2cqw;
+  padding: 1.1cqw 1.6cqw;
+  border-radius: 0.7cqw;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 0 0 0.25cqw rgba(255, 255, 255, 0.16);
+}
+.tc[data-tpl='chrome'] .tc-plaque b {
+  font-size: 5.4cqw;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.tc[data-tpl='chrome'] .tc-plaque span {
+  font-size: 1.7cqw;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
 
+/* --- refractor: foil stock that swings, octagon window, white plate ------ */
+
+.tc[data-tpl='refractor'] .tc-body {
+  grid-template-rows: auto 1fr auto;
+  gap: 2.4cqw;
+  padding: 3.4cqw;
+  background: #0b0c0f;
+  color: #0b0c0f;
+}
+/* The stock itself. Its band slides with the viewing angle, which is what a
+   refractor does and what a static gradient can never look like. */
+.tc[data-tpl='refractor'] .tc-foil {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    #ffd7ea 0%, #cfe2ff 16%, #d6fff1 32%, #fff6cf 48%,
+    #ffd7ea 62%, #cfe2ff 78%, #d6fff1 92%, #fff6cf 100%
+  );
+  background-size: 230% 100%;
+  background-position: calc(var(--lc-glare-x, 50%) * 1.5) 0;
+}
+.tc[data-tpl='refractor'] .tc-tab {
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+  padding: 0.9cqw 3cqw;
+  border-radius: 0 0 1.2cqw 1.2cqw;
+  margin-top: -3.4cqw;
+  background: #0b0c0f;
+  color: #fff;
+  font-size: 2.1cqw;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.tc[data-tpl='refractor'] .tc-cut {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  padding: 0.95cqw;
+  background: #0b0c0f;
+}
+.tc[data-tpl='refractor'] .tc-rule {
+  height: 100%;
+  min-height: 0;
+  padding: 0.4cqw;
+  background: linear-gradient(140deg, #f6e2a6, #b98f36 45%, #ffefc0 70%, #9d7423);
+}
+.tc[data-tpl='refractor'] .tc-cut .tc-art { height: 100%; }
+.tc[data-tpl='refractor'] .tc-plate {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.7cqw;
+  justify-items: center;
+  text-align: center;
+  padding: 1.7cqw 2cqw;
+  border-radius: 0.7cqw;
+  background: #fff;
+  box-shadow: 0 0.35cqw 0 rgba(0, 0, 0, 0.28);
+}
+.tc[data-tpl='refractor'] .tc-name { font-size: 5.8cqw; text-transform: uppercase; max-width: 100%; }
+.tc[data-tpl='refractor'] .tc-eyebrow { font-size: 1.9cqw; color: rgba(11, 12, 15, 0.55); max-width: 100%; }
 /* The lens fills whatever slot the template gives it; the card's own aspect
    ratio would otherwise size it independently and crop the illustration. */
 .tc-art { min-height: 0; }
@@ -1329,17 +1399,6 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23g)'/%3E%3C/svg%3E");
 }
 
-
-/* --- full art: the picture is the card ---------------------------------- */
-
-.tc[data-tpl='fullart'] .tc-body { background: #05060a; }
-.tc[data-tpl='fullart'] .tc-vign {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 5;
-  background: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.5));
-}
 
 .hint { margin: 0; font-size: 0.9375rem; color: var(--ink-3); }
 

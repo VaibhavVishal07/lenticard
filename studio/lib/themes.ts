@@ -164,7 +164,7 @@ export function copyFor(theme: CardTheme): CardCopy {
 
 // ---------------------------------------------------------------- templates
 
-export type CardLayout = 'fullart' | 'classic' | 'kaboom' | 'prism' | 'retro' | 'museum';
+export type CardLayout = 'fullart' | 'rookie' | 'chrome' | 'refractor';
 
 export interface Template {
   id: CardLayout;
@@ -175,46 +175,37 @@ export interface Template {
 }
 
 /**
- * Five templates that are actually different objects, not one card with its
- * palette swapped: where the art sits, whether there is a border at all, where
- * the name goes, and what the frame is made of all change.
+ * Four templates, each taken from a real card rather than invented.
+ *
+ * They differ in the ways cards actually differ: what the stock is (foil,
+ * coated board, black acrylic-look chrome), whether there is a border and how
+ * thick, how the window is cut, and where the name is struck. A recolour would
+ * not be a template — these are four objects.
  */
 export const TEMPLATES: Template[] = [
   {
     id: 'fullart',
-    label: 'Full art',
-    hint: 'The picture is the card. Nothing printed over it but the mark',
-    swatch: ['#1b2f6b', '#7d5cff'],
+    label: 'Full bleed',
+    hint: 'Picture to all four edges, foil trim line, name struck over the foot',
+    swatch: ['#12131a', '#7d5cff'],
   },
   {
-    id: 'classic',
-    label: 'Classic',
-    hint: 'Silver bevel, name plate under the art, stat strip along the foot',
-    swatch: ['#d9dde3', '#8b929c'],
-  },
-  {
-    id: 'kaboom',
-    label: 'Kaboom',
-    hint: 'Art to the edges, a wordmark over it, chrome name in the corner',
-    swatch: ['#ff3b30', '#ffcc00'],
-  },
-  {
-    id: 'prism',
-    label: 'Prism',
-    hint: 'Angular cut panels on a dark board, one neon rule',
-    swatch: ['#0e1116', '#c6ff2e'],
-  },
-  {
-    id: 'retro',
-    label: 'Retro',
-    hint: 'Thick colour border, rounded inner frame, banner name',
+    id: 'rookie',
+    label: 'Rookie',
+    hint: 'Thick colour border, coated inner stock, name on a banner',
     swatch: ['#e8483c', '#2b6fd1'],
   },
   {
-    id: 'museum',
-    label: 'Museum',
-    hint: 'White stock, hairline rule, small caps, nothing else',
-    swatch: ['#f6f5f1', '#c9c6bd'],
+    id: 'chrome',
+    label: 'Chrome',
+    hint: 'Black board, cut-corner window, outline wordmark and a stat plaque',
+    swatch: ['#0e1116', '#c6ff2e'],
+  },
+  {
+    id: 'refractor',
+    label: 'Refractor',
+    hint: 'Foil stock that swings with the angle, octagon window, white plate',
+    swatch: ['#ffd9ec', '#cfe3ff'],
   },
 ];
 
