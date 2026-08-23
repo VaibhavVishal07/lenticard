@@ -18,6 +18,7 @@ import { CardStack, type StackEntry } from './components/CardStack';
 import { CASE_KINDS, Slab, type CaseKind } from './components/Slab';
 import { TradingCard } from './components/TradingCard';
 import { buildDefaultCard } from './lib/default-card';
+import { interlacedStill } from './lib/interlace';
 import { INITIAL, type CardSettings } from './lib/presets';
 import { decodePayload, type SharePayload } from './lib/share';
 import { clearLocation, hasCardInLocation, loadFromLocation } from './lib/stores';
@@ -150,6 +151,28 @@ export default function App() {
 
   const images = useMemo(() => photos.map((p) => p.url), [photos]);
 
+  /**
+   * The belt's stills, woven once.
+   *
+   * Drawn from whatever the card currently holds, so the column is showing the
+   * same print the maker would produce rather than a stock photograph.
+   */
+  const [woven, setWoven] = useState<string | null>(null);
+  useEffect(() => {
+    if (images.length < 2) return;
+    let cancelled = false;
+    void interlacedStill(images)
+      .then((url) => {
+        if (!cancelled) setWoven(url);
+      })
+      .catch(() => {
+        /* the belt falls back to the plain frame */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [images]);
+
   // The column beside the pitch: one real card, the rest waiting for art.
   /**
    * The column is the range, not a queue of one card.
@@ -251,7 +274,7 @@ export default function App() {
                 return (
                   <TradingCard
                     photos={images}
-                    still={isLive ? undefined : entry.still}
+                    still={isLive ? undefined : woven ?? entry.still}
                     theme={entryTheme}
                     copy={{ ...copyFor(entryTheme), title: entry.name }}
                     layout={entry.layout}
@@ -276,9 +299,9 @@ export default function App() {
             <motion.span
               className="case-box"
               aria-hidden
-              initial={{ y: 0, opacity: 1 }}
-              animate={{ y: '52%', opacity: 0 }}
-              transition={{ delay: 0.3, duration: 0.52, ease: EASE }}
+              initial={{ y: '62%', opacity: 0 }}
+              animate={{ y: ['62%', '0%', '0%', '58%'], opacity: [0, 1, 1, 0] }}
+              transition={{ duration: 1.15, times: [0, 0.24, 0.46, 1], ease: EASE }}
               onAnimationComplete={() => setPulling(false)}
             />
           )}
@@ -286,7 +309,13 @@ export default function App() {
             className="case-lift"
             initial={pulling ? { y: '34%', scale: 0.82, rotateX: 22, opacity: 0 } : false}
             animate={{ y: 0, scale: 1, rotateX: 0, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 116, damping: 19, mass: 0.9 }}
+            transition={{
+              type: 'spring',
+              stiffness: 116,
+              damping: 19,
+              mass: 0.9,
+              delay: pulling ? 0.26 : 0,
+            }}
           >
           <Slab
             encased
@@ -327,18 +356,18 @@ export default function App() {
                   lenticard
                 </span>
                 <h1>
-                  Your own <em>lenticular</em> trading card
+                  Create and share your own <em>lenticular</em> trading card
                 </h1>
                 <p className="lede">
                   Three of your photos, printed as one card that changes when it
-                  moves, sealed in a case with your name on the label.
+                  moves, sealed in the case of your choosing, then sent to whoever it is for.
                 </p>
 
                 <button
                   className="btn btn-holo btn-xl"
                   onClick={openMaker}
                 >
-                  Make yours
+                  Create and share
                   <span className="btn-well">
                     <ArrowUpRight size={14} weight="bold" />
                   </span>
@@ -354,7 +383,7 @@ export default function App() {
                 className="editor"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: EASE }}
+                transition={{ duration: 0.5, ease: EASE, delay: pulling ? 0.5 : 0 }}
               >
                 <nav className="steps" aria-label="Steps">
                   {STEPS.map((s, i) => (

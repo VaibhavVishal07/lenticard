@@ -44,11 +44,12 @@ export function CardStack({ entries, render }: CardStackProps) {
       // The belt is doubled so the loop has somewhere to run to. Only the first
       // pass carries the live lens, or the seam would cost a second WebGL
       // context for a card nobody is looking at.
-      // The card under the pointer becomes a real lens. Every slab flips, not
-      // just the one that happens to be seeded — a belt of stills that only one
-      // of moves is a belt of pictures of a card. Two contexts at most: the
-      // permanent one, and whichever you are pointing at.
-      const live = !duplicate && (entry.real === true || isHeld);
+      // Exactly one live lens, and it does not move around. Swapping a still
+      // for a canvas when the pointer arrives is a mount, a resize, three
+      // texture uploads and only then a paint — which is the jump you see in
+      // the middle of the card. The rest carry a woven still, so they read as
+      // lenticular standing still, which is what the sheet actually does.
+      const live = entry.real === true && !duplicate;
       return (
         <div
           className="stack-slot"
