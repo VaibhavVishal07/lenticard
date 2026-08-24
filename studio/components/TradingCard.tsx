@@ -169,6 +169,99 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           </div>
         )}
 
+        {/* --- prism: yellow board, a starburst that burns in the window --- */}
+        {layout === 'prism' && (
+          <div className="tc-body">
+            <div className="tc-inner">
+              <div className="tc-head">
+                <h2 className="tc-name">{copy.title}</h2>
+                <span className="tc-hp">
+                  <i>{copy.statLabel}</i>
+                  {copy.statValue}
+                </span>
+              </div>
+              <div className="tc-window">
+                {art(false)}
+                {/* The foil sits over the picture and nowhere else, which is
+                    the whole tell of a holo: the border stays flat card. */}
+                <span className="tc-prism" aria-hidden />
+                <span className="tc-star" aria-hidden />
+              </div>
+              <span className="tc-eyebrow">{copy.stage}</span>
+              <div className="tc-ledger">
+                <span>{theme.set}</span>
+                <span>{theme.rarity}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- arcade: a cabinet, seen from the front ---------------------- */}
+        {layout === 'arcade' && (
+          <div className="tc-body">
+            <div className="tc-marquee">
+              <h2 className="tc-name">{copy.title}</h2>
+              <span className="tc-eyebrow">{copy.stage}</span>
+            </div>
+            <div className="tc-crt">
+              {art(false)}
+              <span className="tc-scan" aria-hidden />
+              <span className="tc-bulge" aria-hidden />
+            </div>
+            <div className="tc-score">
+              <span>{copy.statLabel}</span>
+              <b>{copy.statValue}</b>
+            </div>
+            <span className="tc-coin" aria-hidden>
+              {theme.set} · insert coin
+            </span>
+          </div>
+        )}
+
+        {/* --- sticker: kiss-cut vinyl, still on its backing sheet --------- */}
+        {layout === 'sticker' && (
+          <div className="tc-body">
+            <span className="tc-grid" aria-hidden />
+            <div className="tc-peel">
+              <div className="tc-window">{art(false)}</div>
+              <div className="tc-tag">
+                <h2 className="tc-name">{copy.title}</h2>
+                <span className="tc-eyebrow">{copy.stage}</span>
+              </div>
+              <span className="tc-chip">
+                {copy.statLabel} {copy.statValue}
+              </span>
+              {/* The corner already lifting off the sheet. */}
+              <span className="tc-curl" aria-hidden />
+            </div>
+            <span className="tc-die" aria-hidden>
+              {theme.set}
+            </span>
+          </div>
+        )}
+
+        {/* --- bootleg: the same card, printed a millimetre out ------------ */}
+        {layout === 'bootleg' && (
+          <div className="tc-body">
+            <div className="tc-window">
+              {art(false)}
+              {/* Two channels, offset the way a slipped plate offsets them. */}
+              <span className="tc-mis tc-mis-c" aria-hidden />
+              <span className="tc-mis tc-mis-m" aria-hidden />
+            </div>
+            <div className="tc-stamp">
+              <h2 className="tc-name">{copy.title}</h2>
+              <span className="tc-eyebrow">
+                {copy.stage} · {copy.statLabel} {copy.statValue}
+              </span>
+            </div>
+            <span className="tc-overprint" aria-hidden>
+              {theme.badge}
+            </span>
+            <span className="tc-reg" aria-hidden />
+          </div>
+        )}
+
         {/* --- refractor: foil stock, octagon window, white name plate ----- */}
         {layout === 'refractor' && (
           <div className="tc-body">

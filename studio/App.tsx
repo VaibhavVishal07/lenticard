@@ -11,7 +11,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MAX_FRAMES } from '../src/core/types';
 import type { LenticularCardHandle } from '../src/react/LenticularCard';
-import { Dock } from './components/Dock';
 import { frameFromDataUrl, Frames, framesFromFiles, type Frame } from './components/Frames';
 import { Greeting } from './components/Greeting';
 import { SendPanel } from './components/SendPanel';
@@ -265,10 +264,10 @@ export default function App() {
       { id: 's2', still: base + 'cards/chandra-1.jpg', art: 'chandra', name: 'Torch Of Defiance', set: 'FULL BLEED', layout: 'fullart', kind: 'toploader' },
       { id: 's3', still: base + 'cards/dragon-1.jpg', art: 'dragon', name: 'Flying 6/6', set: 'CHROME', layout: 'chrome', kind: 'pack' },
       { id: 's4', still: base + 'cards/max-1.jpg', art: 'max', name: 'Verstappen', set: 'ROOKIE', layout: 'rookie', kind: 'sleeve' },
-      { id: 's5', still: base + 'cards/chandra-2.jpg', art: 'chandra', name: 'Cast A Spell', set: 'REFRACTOR', layout: 'refractor', kind: 'slab' },
-      { id: 's6', still: base + 'cards/dragon-2.jpg', art: 'dragon', name: 'Green Flame', set: 'FULL BLEED', layout: 'fullart', kind: 'toploader' },
-      { id: 's7', still: base + 'cards/astra-2.jpg', art: 'astra', name: 'Spare Keys', set: 'ROOKIE', layout: 'rookie', kind: 'pack' },
-      { id: 's8', still: base + 'cards/max-2.jpg', art: 'max', name: 'Lights Out', set: 'CHROME', layout: 'chrome', kind: 'sleeve' },
+      { id: 's5', still: base + 'cards/chandra-2.jpg', art: 'chandra', name: 'Cast A Spell', set: 'PRISM', layout: 'prism', kind: 'slab' },
+      { id: 's6', still: base + 'cards/dragon-2.jpg', art: 'dragon', name: 'Green Flame', set: 'ARCADE', layout: 'arcade', kind: 'toploader' },
+      { id: 's7', still: base + 'cards/astra-2.jpg', art: 'astra', name: 'Spare Keys', set: 'STICKER', layout: 'sticker', kind: 'pack' },
+      { id: 's8', still: base + 'cards/max-2.jpg', art: 'max', name: 'Lights Out', set: 'BOOTLEG', layout: 'bootleg', kind: 'sleeve' },
     ];
   }, []);
   const ready = demo.length > 0 && !checking && held;
@@ -711,6 +710,30 @@ export default function App() {
                     </div>
                   </section>
                 )}
+
+                {/* The two ways out of the maker, at the foot of the panel
+                    they belong to. These were a floating pill centred on the
+                    window, which put them across the middle of the card's
+                    pane rather than under the controls they follow — and made
+                    the one button that finishes the card quieter than the one
+                    on the landing page that starts it. */}
+                <div className="bench-actions">
+                  <button className="btn btn-back" onClick={() => setStage('home')}>
+                    <ArrowLeft size={17} weight="light" />
+                    Back
+                  </button>
+                  <button
+                    className="btn btn-holo btn-go"
+                    disabled={photos.length < 2}
+                    onClick={() => setStage('send')}
+                  >
+                    <PaperPlaneTilt size={17} weight="bold" />
+                    Seal and send
+                    <span className="btn-well">
+                      <ArrowUpRight size={14} weight="bold" />
+                    </span>
+                  </button>
+                </div>
               </motion.div>
             )}
 
@@ -732,6 +755,12 @@ export default function App() {
                   replyTo={replyTo}
                   onError={notify}
                 />
+                <div className="bench-actions">
+                  <button className="btn btn-back" onClick={() => setStage('make')}>
+                    <ArrowLeft size={17} weight="light" />
+                    Back to the maker
+                  </button>
+                </div>
               </motion.div>
             )}
         </div>
@@ -750,32 +779,6 @@ export default function App() {
       </main>
 
       {tuning && stage === 'home' && <Tuner />}
-
-      {ready && stage !== 'home' && (
-        <Dock>
-          <>
-              <button
-                className="btn"
-                onClick={() => {
-                  setStage(stage === 'send' ? 'make' : 'home');
-                }}
-              >
-                <ArrowLeft size={15} weight="light" />
-                Back
-              </button>
-              {stage === 'make' && (
-                <button
-                  className="btn btn-white btn-wide"
-                  disabled={photos.length < 2}
-                  onClick={() => setStage('send')}
-                >
-                  <PaperPlaneTilt size={16} weight="bold" />
-                  Seal and send
-                </button>
-              )}
-          </>
-        </Dock>
-      )}
 
       <AnimatePresence>
         {dropping && (

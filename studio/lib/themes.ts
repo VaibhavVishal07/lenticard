@@ -140,6 +140,94 @@ export const THEMES: CardTheme[] = [
     set: 'REFRACTOR',
     rarity: '\u2605\u2605\u2605',
   },
+  {
+    id: 'prism',
+    label: 'Prism holo',
+    stage: 'Holo rare',
+    statLabel: 'HP',
+    statValue: '90',
+    badge: 'HOLO',
+    glyph: '\u2727',
+    plate: ['#fff6db', '#2b2f8f'],
+    board: '#f6d64a',
+    ink: '#1b1708',
+    accent: '#2b2f8f',
+    title: 'Your Card',
+    moves: [
+      { cost: 1, name: 'First Look', value: '40', text: 'Before anyone has tilted it.' },
+      { cost: 3, name: 'Full Turn', value: '120', text: 'All three frames, one movement.' },
+    ],
+    strip: ['Glare x2', 'Still -30', '\u2022\u2022'],
+    flavour: 'Three photographs that only make sense when it moves.',
+    set: 'PRISM',
+    rarity: '\u2605\u2605\u2605\u2605',
+  },
+  {
+    id: 'arcade',
+    label: 'Arcade',
+    stage: 'High score',
+    statLabel: 'PTS',
+    statValue: '9990',
+    badge: 'ARCADE',
+    glyph: '\u25b6',
+    plate: ['#12f7c0', '#04d3ff'],
+    board: '#05070f',
+    ink: '#e8fbff',
+    accent: '#ff2bd6',
+    title: 'Your Card',
+    moves: [
+      { cost: 1, name: 'First Look', value: '40', text: 'Before anyone has tilted it.' },
+      { cost: 3, name: 'Full Turn', value: '120', text: 'All three frames, one movement.' },
+    ],
+    strip: ['Glare x2', 'Still -30', '\u2022\u2022'],
+    flavour: 'Three photographs that only make sense when it moves.',
+    set: 'ARCADE',
+    rarity: '\u2605\u2605\u2605',
+  },
+  {
+    id: 'sticker',
+    label: 'Sticker',
+    stage: 'Kiss cut',
+    statLabel: 'QTY',
+    statValue: '01',
+    badge: 'STICKER',
+    glyph: '\u2739',
+    plate: ['#ffffff', '#ff5a3c'],
+    board: '#f1efe8',
+    ink: '#16130f',
+    accent: '#ff5a3c',
+    title: 'Your Card',
+    moves: [
+      { cost: 1, name: 'First Look', value: '40', text: 'Before anyone has tilted it.' },
+      { cost: 3, name: 'Full Turn', value: '120', text: 'All three frames, one movement.' },
+    ],
+    strip: ['Glare x2', 'Still -30', '\u2022\u2022'],
+    flavour: 'Three photographs that only make sense when it moves.',
+    set: 'STICKER',
+    rarity: '\u2605',
+  },
+  {
+    id: 'bootleg',
+    label: 'Bootleg',
+    stage: 'Unlicensed',
+    statLabel: 'HP',
+    statValue: '999',
+    badge: 'NOT OFFICIAL',
+    glyph: '\u2716',
+    plate: ['#f4eddc', '#d81f3f'],
+    board: '#191713',
+    ink: '#f7f2e6',
+    accent: '#00c2ff',
+    title: 'Your Card',
+    moves: [
+      { cost: 1, name: 'First Look', value: '40', text: 'Before anyone has tilted it.' },
+      { cost: 3, name: 'Full Turn', value: '120', text: 'All three frames, one movement.' },
+    ],
+    strip: ['Glare x2', 'Still -30', '\u2022\u2022'],
+    flavour: 'Three photographs that only make sense when it moves.',
+    set: 'BOOTLEG',
+    rarity: '\u2605',
+  },
 ];
 
 export const DEFAULT_THEME = THEMES[0];
@@ -173,7 +261,15 @@ export function copyFor(theme: CardTheme): CardCopy {
 
 // ---------------------------------------------------------------- templates
 
-export type CardLayout = 'fullart' | 'rookie' | 'chrome' | 'refractor';
+export type CardLayout =
+  | 'fullart'
+  | 'rookie'
+  | 'chrome'
+  | 'refractor'
+  | 'prism'
+  | 'arcade'
+  | 'sticker'
+  | 'bootleg';
 
 export interface Template {
   id: CardLayout;
@@ -184,12 +280,20 @@ export interface Template {
 }
 
 /**
- * Four templates, each taken from a real card rather than invented.
+ * Eight templates, each taken from a real card rather than invented.
  *
  * They differ in the ways cards actually differ: what the stock is (foil,
- * coated board, black acrylic-look chrome), whether there is a border and how
- * thick, how the window is cut, and where the name is struck. A recolour would
- * not be a template — these are four objects.
+ * coated board, black acrylic-look chrome, vinyl, yellow-bordered cardboard),
+ * whether there is a border and how thick, how the window is cut, and where
+ * the name is struck. A recolour would not be a template — these are eight
+ * objects.
+ *
+ * The first four are the serious end of a card shop and the last four are the
+ * rest of it, which is most of it: the holo everybody's childhood card was,
+ * the cabinet-side art you never owned as a card at all, the sticker off a
+ * lunchbox, and the market-stall knock-off with the colours printed a
+ * millimetre out. A card you would actually give somebody is rarely the sober
+ * one.
  */
 export const TEMPLATES: Template[] = [
   {
@@ -215,6 +319,30 @@ export const TEMPLATES: Template[] = [
     label: 'Refractor',
     hint: 'Foil stock that swings with the angle, octagon window, white plate',
     swatch: ['#ff4fd8', '#7ce8ff'],
+  },
+  {
+    id: 'prism',
+    label: 'Prism holo',
+    hint: 'Yellow board, and a starburst foil that only burns inside the window',
+    swatch: ['#f6d64a', '#8f6bff'],
+  },
+  {
+    id: 'arcade',
+    label: 'Arcade',
+    hint: 'Cabinet marquee, a curved CRT full of scanlines, score along the foot',
+    swatch: ['#05070f', '#12f7c0'],
+  },
+  {
+    id: 'sticker',
+    label: 'Sticker',
+    hint: 'Kiss-cut vinyl on a backing sheet, fat white keyline, one corner lifting',
+    swatch: ['#f1efe8', '#ff5a3c'],
+  },
+  {
+    id: 'bootleg',
+    label: 'Bootleg',
+    hint: 'Printed a millimetre out of register, stamped crooked, licensed by nobody',
+    swatch: ['#d81f3f', '#00c2ff'],
   },
 ];
 
