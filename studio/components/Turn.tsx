@@ -44,8 +44,18 @@ const REACH = 0.5;
  * `style.opacity` inside a frame loop — a state update per pointer event would
  * re-render the whole card sixty times a second to change two numbers.
  */
-export function Turn({ flat, views, demo = false }: TurnProps) {
+export function Turn({ flat, views, demo: wantsDemo = false }: TurnProps) {
   const host = useRef<HTMLSpanElement>(null);
+
+  /**
+   * The unattended sweep is decoration that moves on its own, which is exactly
+   * what someone asking for reduced motion has asked not to see. The lens still
+   * works under their pointer — that is a response to them rather than a
+   * performance, so it stays.
+   */
+  const demo =
+    wantsDemo &&
+    !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   useEffect(() => {
     const node = host.current;

@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeft,
+  ArrowsClockwise,
   ArrowUpRight,
+  HandTap,
   Images,
   PaperPlaneTilt,
   Sparkle,
@@ -17,7 +19,7 @@ import { SendPanel } from './components/SendPanel';
 import { Tuner } from './components/Tuner';
 import { CardStack, type StackEntry } from './components/CardStack';
 import { CASE_KINDS, Slab, type CaseKind } from './components/Slab';
-import { TradingCard } from './components/TradingCard';
+import { CardReverse, TradingCard } from './components/TradingCard';
 import { buildDefaultCard } from './lib/default-card';
 import { interlacedViews, type Print } from './lib/interlace';
 import { INITIAL, type CardSettings } from './lib/presets';
@@ -28,6 +30,7 @@ import {
   DEFAULT_TEMPLATE,
   DEFAULT_THEME,
   findTheme,
+  SECRET_MAX,
   TEMPLATES,
   type CardCopy,
   type CardLayout,
@@ -65,7 +68,11 @@ function TemplateStrip({
   big?: boolean;
 }) {
   return (
-    <div className={big ? 'strip-row strip-row-big' : 'strip-row'}>
+    <div
+      className={big ? 'strip-row strip-row-big' : 'strip-row'}
+      role="group"
+      aria-label="Template"
+    >
       {TEMPLATES.map((t) => (
         <button
           key={t.id}
@@ -101,7 +108,7 @@ function CasePicker({
   onPick: (id: CaseKind) => void;
 }) {
   return (
-    <div className="cases">
+    <div className="cases" role="group" aria-label="What the card arrives in">
       {CASE_KINDS.map((k) => (
         <button
           key={k.id}
@@ -125,6 +132,20 @@ export default function App() {
   const [copy, setCopy] = useState<CardCopy>(() => copyFor(DEFAULT_THEME));
   const [layout, setLayout] = useState<CardLayout>(DEFAULT_TEMPLATE.id);
   const [settings] = useState<CardSettings>(INITIAL);
+
+  /**
+   * The back of the card.
+   *
+   * Kept out of `copy` on purpose. Everything in `copy` is printing on the
+   * front, is rewritten wholesale when a template changes, and is read by
+   * anyone the card is shown to. This is one sentence for one person, found
+   * only by turning the card over, and it survives every other choice made in
+   * the maker.
+   */
+  const [secret, setSecret] = useState('');
+  const [secretFrom, setSecretFrom] = useState('');
+  /** Which way round the card on the bench is facing. */
+  const [showBack, setShowBack] = useState(false);
 
   const [caseKind, setCaseKind] = useState<CaseKind>('slab');
 
@@ -261,13 +282,13 @@ export default function App() {
     const base = import.meta.env.BASE_URL;
     return [
       { id: 's1', still: base + 'cards/astra-1.jpg', art: 'astra', name: 'Astra Volt', set: 'FULL BLEED', layout: 'fullart', kind: 'slab', real: true },
-      { id: 's2', still: base + 'cards/chandra-1.jpg', art: 'chandra', name: 'Torch Of Defiance', set: 'FULL BLEED', layout: 'fullart', kind: 'toploader' },
+      { id: 's2', still: base + 'cards/chandra-1.jpg', art: 'chandra', name: 'Torch Of Defiance', set: 'FULL BLEED', layout: 'fullart', kind: 'slab', note: 'Ten years and you still make me laugh in the queue.', noteFrom: 'Priya' },
       { id: 's3', still: base + 'cards/dragon-1.jpg', art: 'dragon', name: 'Flying 6/6', set: 'CHROME', layout: 'chrome', kind: 'pack' },
       { id: 's4', still: base + 'cards/max-1.jpg', art: 'max', name: 'Verstappen', set: 'ROOKIE', layout: 'rookie', kind: 'sleeve' },
-      { id: 's5', still: base + 'cards/chandra-2.jpg', art: 'chandra', name: 'Cast A Spell', set: 'PRISM', layout: 'prism', kind: 'slab' },
-      { id: 's6', still: base + 'cards/dragon-2.jpg', art: 'dragon', name: 'Green Flame', set: 'ARCADE', layout: 'arcade', kind: 'toploader' },
-      { id: 's7', still: base + 'cards/astra-2.jpg', art: 'astra', name: 'Spare Keys', set: 'STICKER', layout: 'sticker', kind: 'pack' },
-      { id: 's8', still: base + 'cards/max-2.jpg', art: 'max', name: 'Lights Out', set: 'BOOTLEG', layout: 'bootleg', kind: 'sleeve' },
+      { id: 's5', still: base + 'cards/chandra-2.jpg', art: 'chandra', name: 'Cast A Spell', set: 'MARQUEE', layout: 'marquee', kind: 'slab' },
+      { id: 's6', still: base + 'cards/dragon-2.jpg', art: 'dragon', name: 'Green Flame', set: 'KIT', layout: 'kit', kind: 'toploader', note: 'Told you I would get you one of these.', noteFrom: 'Dad' },
+      { id: 's7', still: base + 'cards/astra-2.jpg', art: 'astra', name: 'Spare Keys', set: 'BADGE', layout: 'badge', kind: 'pack' },
+      { id: 's8', still: base + 'cards/max-2.jpg', art: 'max', name: 'Lights Out', set: 'SIGIL', layout: 'sigil', kind: 'sleeve' },
     ];
   }, []);
   const ready = demo.length > 0 && !checking && held;
@@ -419,6 +440,15 @@ export default function App() {
           <div className="stage-stack">
             <CardStack
               entries={showcase}
+              renderReverse={(entry) => (
+                <CardReverse
+                  secret={entry.note ?? ''}
+                  from={entry.noteFrom}
+                  theme={findTheme(entry.layout)}
+                  title={entry.name}
+                  tint={woven[entry.art]?.tint}
+                />
+              )}
               render={(entry, isLive) => {
                 const entryTheme = findTheme(entry.layout);
                 return (
@@ -445,13 +475,25 @@ export default function App() {
         )}
 
         {stage !== 'home' && (
-        <div className="bench-view">
+        <div
+          className="bench-view"
+          /* The room takes its light from the card in it. Pick a template
+             and the bench changes colour, so the two read as one object
+             rather than a card sitting on a grey table. */
+          style={{ ['--room' as string]: cardTheme.accent }}
+        >
           {/* The pane the card is looked at in. A lamp above it, a floor under
               it, and the grading plate off to one side: the object is on a
               bench now rather than floating in the middle of a dark page with
               the controls floating beside it. */}
           <span className="bench-lamp" aria-hidden />
           <span className="bench-floor" aria-hidden />
+          <span className="bench-ticks" aria-hidden />
+          <span className="bench-air" aria-hidden />
+          <span className="bench-pool" aria-hidden />
+          <span className="bench-rail" aria-hidden>
+            Lenticard · Workbench · {cardTheme.set}
+          </span>
         <div className="stage-case">
           {/* The box the case comes out of. It sits in front of the lower half
               of the slab, so the slab reads as rising from inside it, then
@@ -486,6 +528,17 @@ export default function App() {
             frames={photos.length}
             kind={caseKind}
             onAngle={onAngle}
+            flipped={showBack}
+            reverse={
+              <CardReverse
+                secret={secret}
+                from={secretFrom}
+                theme={cardTheme}
+                title={copy.title}
+                tint={woven.astra?.tint}
+              writing={showBack}
+              />
+            }
           >
             <TradingCard
               ref={cardRef}
@@ -523,6 +576,22 @@ export default function App() {
               <dd className="bench-serial">{serial}</dd>
             </div>
           </dl>
+
+          {/* Turning the card over on the bench, so the back is something you
+              can look at while you write it rather than something you only
+              ever see after it has been sent. */}
+          {stage === 'make' && (
+            <button
+              className="bench-flip"
+              aria-pressed={showBack}
+              disabled={!secret.trim()}
+              onClick={() => setShowBack((v) => !v)}
+            >
+              <ArrowsClockwise size={14} weight="bold" />
+              {showBack ? 'Show the front' : 'Show the back'}
+              {!secret.trim() && <span className="bench-flip-note">nothing written yet</span>}
+            </button>
+          )}
         </div>
         )}
 
@@ -558,6 +627,8 @@ export default function App() {
                 </button>
 
                 <p className="hint">One minute. No account.</p>
+
+
               </motion.div>
             )}
 
@@ -621,7 +692,7 @@ export default function App() {
                   <section className="step-body">
                     <div className="step-head">
                       <h2>Words</h2>
-                      <p>What the card says about whoever it is for.</p>
+                      <p>A name for the card, and something on the back for them.</p>
                     </div>
 
                     <div className="field">
@@ -635,6 +706,18 @@ export default function App() {
                       />
                     </div>
 
+                    {/* Everything the card prints besides its name, folded
+                        away. The step opened with nine inputs, seven of
+                        which most templates do not even print — a card is
+                        its picture, its name and what you wrote on the back,
+                        and asking for six numbers before any of that is the
+                        form getting in the way of the gift. Open if you want
+                        them. */}
+                    <details className="more-print">
+                      <summary>
+                        <span>More printing</span>
+                        <small>stat line, moves, flavour text</small>
+                      </summary>
                     <div className="two-up">
                       <div className="field">
                         <label className="field-label" htmlFor="line">Line under it</label>
@@ -708,6 +791,109 @@ export default function App() {
                         onChange={(e) => setCopy((c) => ({ ...c, flavour: e.target.value }))}
                       />
                     </div>
+                    </details>
+
+                    {/* The back of the card, given its own section rather than
+                        another field in the list. Everything above this is
+                        printing anyone who is shown the card will read. This
+                        one is for the person it is for, and it is the only
+                        thing on the page that is not on the front — so it is
+                        fenced off, and it says where it goes. */}
+                    {/* Reaching for this turns the case over.
+                        Writing on the back of a card while looking at the
+                        front of it is writing blind — the whole point of the
+                        thing being physical is that you can see the side you
+                        are working on. Focus anywhere in this section and the
+                        case turns; leave it for anything outside and it turns
+                        back. `relatedTarget` is what makes the second half
+                        work: moving from the message to the signature is
+                        still inside, and the card should not flip twice on
+                        the way. */}
+                    <section
+                      className="reverse-field"
+                      aria-labelledby="secret-head"
+                      onFocus={() => setShowBack(true)}
+                      onBlur={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget)) {
+                          setShowBack(false);
+                        }
+                      }}
+                    >
+                      <div className="reverse-head">
+                        <span className="reverse-badge" aria-hidden>
+                          <ArrowsClockwise size={13} weight="bold" />
+                        </span>
+                        <div>
+                          <h3 id="secret-head">Add your special message</h3>
+                          <p>
+                            Struck into the back of the card in 3D. They will only find
+                            it by turning it over.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="field">
+                        <label className="field-label" htmlFor="secret">
+                          On the reverse
+                          {/* A budget, counted down. "51 / 220" asks you to do
+                              the subtraction; what somebody writing a note wants
+                              to know is how much room is left, and whether they
+                              are near the end of it. */}
+                          <span
+                            className="field-value"
+                            data-left={
+                              secret.length >= SECRET_MAX
+                                ? 'none'
+                                : SECRET_MAX - secret.length <= 25
+                                  ? 'few'
+                                  : 'plenty'
+                            }
+                          >
+                            {secret.length >= SECRET_MAX
+                              ? 'Card is full'
+                              : `${SECRET_MAX - secret.length} left`}
+                          </span>
+                        </label>
+                        <textarea
+                          id="secret"
+                          className="text-input"
+                          rows={3}
+                          maxLength={SECRET_MAX}
+                          value={secret}
+                          placeholder="Something you would not put on the front."
+                          onChange={(e) => setSecret(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label className="field-label" htmlFor="secret-from">
+                          Signed
+                        </label>
+                        <input
+                          id="secret-from"
+                          className="text-input"
+                          value={secretFrom}
+                          maxLength={24}
+                          placeholder="Your name — optional"
+                          onChange={(e) => setSecretFrom(e.target.value)}
+                        />
+                      </div>
+
+                      <p className="reverse-foot">
+                        {secret.trim() ? (
+                          <>
+                            <HandTap size={13} weight="bold" />
+                            They tap the card, it leaves the case, and they can turn it
+                            over.
+                          </>
+                        ) : (
+                          <>
+                            <HandTap size={13} weight="bold" />
+                            Leave this empty and the card stays one-sided.
+                          </>
+                        )}
+                      </p>
+                    </section>
                   </section>
                 )}
 
@@ -752,6 +938,8 @@ export default function App() {
                   themeId={cardTheme.id}
                   layout={layout}
                   caseKind={caseKind}
+                  secret={secret}
+                  secretFrom={secretFrom}
                   replyTo={replyTo}
                   onError={notify}
                 />

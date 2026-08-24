@@ -34,6 +34,14 @@ interface SlabProps {
   serial?: string;
   /** What the card is sold in. */
   kind?: CaseKind;
+  /**
+   * The reverse of the card, mounted on the back of the same well the front is
+   * in. The card cannot turn on its own — it is sealed inside this — so the
+   * whole assembly rotates and this is what is facing you when it has.
+   */
+  reverse?: ReactNode;
+  /** Whether the assembly is currently turned over. */
+  flipped?: boolean;
   grade?: string;
   onAngle?: (x: number, y: number) => void;
   /** False parks it flat and stops it listening. */
@@ -63,6 +71,8 @@ export function Slab({
   serial = 'LC-0000000',
   frames = 3,
   kind = 'slab',
+  reverse,
+  flipped = false,
   grade = '10',
   onAngle,
   interactive = true,
@@ -76,6 +86,30 @@ export function Slab({
   const rotateY = useSpring(useTransform(px, [-1, 1], [-16, 16]), spring);
   const rotateX = useSpring(useTransform(py, [-1, 1], [12, -12]), spring);
   const shine = useTransform(px, [-1, 1], ['16%', '84%']);
+
+  /**
+   * How far the assembly is turned, published as a number the card can read.
+   *
+   * The message on the reverse is lenticular, which means its depth is made of
+   * layers sliding against each other — and they can only slide if something
+   * tells them how far the card has turned. That is known here and nowhere
+   * else, so it is written onto the case as a custom property and inherits all
+   * the way down to the print on the back.
+   *
+   * Written by hand rather than handed to `style`. A motion value for a custom
+   * property inside `style` goes through the same pipeline as a transform,
+   * and a registered `<number>` property is not something that pipeline can
+   * read back — it throws on the first frame, and because every animation on
+   * the page shares one frame loop, everything else stops with it. A
+   * subscription and a setProperty do the same job and touch nothing else.
+   */
+  const shell = useRef<HTMLDivElement>(null);
+  const turn = useSpring(useTransform(px, [-1, 1], [-1, 1]), spring);
+  useEffect(() => {
+    const write = (v: number) => shell.current?.style.setProperty('--turn', v.toFixed(4));
+    write(turn.get());
+    return turn.on('change', write);
+  }, [turn]);
 
   const track = useCallback(
     (event: PointerEvent) => {
@@ -122,13 +156,33 @@ export function Slab({
 
   return (
     <div className="rig" ref={rig}>
+      {/* The turn, on its own element.
+          A graded card is sealed in acrylic — nothing inside the holder can
+          move, least of all the card rotating within a shell that stays put.
+          So the whole assembly turns: shell, label, card and glass together,
+          as one block. The pointer tilt underneath stays a spring, because
+          that is a different motion — a thing being held, not a thing being
+          turned over — and mixing them into one transform makes the tilt
+          fight the flip. */}
+      <div className="slab-turn" data-flipped={flipped}>
       <motion.div
         className="slab"
         data-encased={encased}
         data-kind={kind}
+        ref={shell}
         style={{ rotateX, rotateY }}
       >
         <div className="slab-back" />
+
+        {/* The back of the holder: the same acrylic seen from behind, with the
+            label's blank reverse frosted into it. Only ever seen once the
+            block has been turned. */}
+        {reverse && (
+          <div className="slab-rear" aria-hidden>
+            <span className="slab-rear-frost" />
+            <span className="slab-rear-well" />
+          </div>
+        )}
 
         <div className="slab-shell">
           {/* The recessed tray the label sits in. */}
@@ -180,7 +234,9 @@ export function Slab({
             ease: EASE,
           }}
         >
-          {children}
+          {/* Two sides of one printed thing, in the one well. */}
+          <div className="slab-card-face slab-card-front">{children}</div>
+          {reverse && <div className="slab-card-face slab-card-back">{reverse}</div>}
         </motion.div>
 
         <motion.div className="slab-glass" style={{ ['--shine' as string]: shine }} />
@@ -198,6 +254,7 @@ export function Slab({
         <span className="slab-edge slab-edge-l" />
         <span className="slab-edge slab-edge-r" />
       </motion.div>
+      </div>
     </div>
   );
 }

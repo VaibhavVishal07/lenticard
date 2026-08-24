@@ -12,6 +12,9 @@ interface SendPanelProps {
   themeId: string;
   layout: string;
   caseKind: string;
+  /** The message on the reverse, carried through to the recipient. */
+  secret: string;
+  secretFrom: string;
   replyTo?: string;
   onError: (message: string) => void;
 }
@@ -28,6 +31,8 @@ export function SendPanel({
   themeId,
   layout,
   caseKind,
+  secret,
+  secretFrom,
   replyTo,
   onError,
 }: SendPanelProps) {
@@ -45,7 +50,10 @@ export function SendPanel({
   useEffect(() => {
     setLink('');
     setCopied(false);
-  }, [occasion, to, from, note, images, settings, title]);
+    // The back is in the link too, so a message typed after the link was built
+    // has to invalidate it — otherwise the card that travels is the one from
+    // before it was written on.
+  }, [occasion, to, from, note, images, settings, title, secret, secretFrom]);
 
   async function build(): Promise<string> {
     if (link) return link;
@@ -60,6 +68,8 @@ export function SendPanel({
         theme: themeId,
         layout,
         caseKind,
+        secret: secret.trim() || undefined,
+        secretFrom: secretFrom.trim() || undefined,
         settings: diffFromDefaults(settings),
         mime: packed.mime,
       },
@@ -95,8 +105,8 @@ export function SendPanel({
       </div>
 
       <div className="field">
-        <span className="field-label">What is it for</span>
-        <div className="choices">
+        <span className="field-label" id="occasion-label">What is it for</span>
+        <div className="choices" role="group" aria-labelledby="occasion-label">
           {OCCASIONS.map((item) => (
             <button
               key={item.id}
@@ -223,7 +233,12 @@ export function SendPanel({
               {store.short ? 'hosted' : `${Math.round(link.length / 1024)} KB`}
             </span>
           </span>
-          <input className="text-input link-out" readOnly value={link} />
+          <input
+            className="text-input link-out"
+            readOnly
+            value={link}
+            aria-label="The link to their card"
+          />
           {link.length > SIZE_WARNING && (
             <p className="hint-warn">
               A long link. It pastes fine, but some apps shorten what they show.

@@ -27,6 +27,16 @@ export interface ShareMeta {
   /** What the card arrives in — slab, toploader, sleeve or pack. */
   caseKind?: string;
   caption?: string;
+  /**
+   * The message struck into the back of the card.
+   *
+   * Separate from `note`, which is the line that sits beside the card on the
+   * greeting page and is read straight away. This one is printed on the reverse
+   * and is only found by turning the card over, which is the point of it.
+   */
+  secret?: string;
+  /** Signed under the message on the back, if the sender wanted it signed. */
+  secretFrom?: string;
   settings: Partial<CardSettings>;
   /** Image mime the frames were encoded as. */
   mime: string;
