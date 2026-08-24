@@ -6,8 +6,10 @@ import {
   PaperPlaneTilt,
   Sparkle,
   TextAa,
+  Tray,
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MAX_FRAMES } from '../src/core/types';
 import type { LenticularCardHandle } from '../src/react/LenticularCard';
 import { Dock } from './components/Dock';
 import { frameFromDataUrl, Frames, framesFromFiles, type Frame } from './components/Frames';
@@ -44,28 +46,74 @@ const STEPS = [
   { id: 'words' as const, label: 'Words', Icon: TextAa },
 ];
 
-/** The template strip, shared by the home page and the design step. */
+/**
+ * The template strip.
+ *
+ * `big` is the design step's reading of it: four miniatures the size of a
+ * thumbnail told you a template was called Chrome and nothing about what
+ * Chrome is. At card size the miniature is the answer — the border, the
+ * window, the plate are all there to be seen — so the label underneath can
+ * stop carrying the whole explanation and the hint can come out of the
+ * tooltip, where nobody found it.
+ */
 function TemplateStrip({
   value,
   onPick,
+  big = false,
 }: {
   value: CardLayout;
   onPick: (id: CardLayout) => void;
+  big?: boolean;
 }) {
   return (
-    <div className="strip-row">
+    <div className={big ? 'strip-row strip-row-big' : 'strip-row'}>
       {TEMPLATES.map((t) => (
         <button
           key={t.id}
-          className="mini"
+          className={big ? 'mini mini-big' : 'mini'}
           data-tpl={t.id}
           aria-pressed={t.id === value}
-          title={t.hint}
+          title={big ? undefined : t.hint}
           style={{ ['--m1' as string]: t.swatch[0], ['--m2' as string]: t.swatch[1] }}
           onClick={() => onPick(t.id)}
         >
           <span className="mini-face" aria-hidden />
           <span className="mini-name">{t.label}</span>
+          {big && <span className="mini-hint">{t.hint}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * What the card arrives in.
+ *
+ * Four words in four pills was the one place in the maker where the thing
+ * being chosen was invisible. A graded slab and a soft sleeve are different
+ * objects to be handed; drawn at forty pixels they are still different
+ * objects, and the word underneath confirms rather than announces.
+ */
+function CasePicker({
+  value,
+  onPick,
+}: {
+  value: CaseKind;
+  onPick: (id: CaseKind) => void;
+}) {
+  return (
+    <div className="cases">
+      {CASE_KINDS.map((k) => (
+        <button
+          key={k.id}
+          className="case-pick"
+          data-case={k.id}
+          aria-pressed={k.id === value}
+          onClick={() => onPick(k.id)}
+        >
+          <span className="case-art" aria-hidden />
+          <span className="case-name">{k.label}</span>
+          <span className="case-hint">{k.hint}</span>
         </button>
       ))}
     </div>
@@ -94,6 +142,9 @@ export default function App() {
   const [pulling, setPulling] = useState(false);
   /** ?tune puts the home page's proportions on sliders. */
   const [tuning] = useState(() => new URLSearchParams(window.location.search).has('tune'));
+  /** Something with files in it is over the window. */
+  const [dropping, setDropping] = useState(false);
+  const dragDepth = useRef(0);
   const cardRef = useRef<LenticularCardHandle>(null);
 
   useEffect(() => {
@@ -135,6 +186,19 @@ export default function App() {
     };
   }, [notify]);
 
+  /**
+   * The card the belt shows, which is not the card you are making.
+   *
+   * These used to be the same list: the default art was loaded straight into
+   * `photos`, so the maker opened with somebody else's card already in the
+   * case and your first act was to throw it away. An empty case is the honest
+   * opening — it is the thing you are filling, and it fills as you drop.
+   *
+   * The belt still needs art, because a landing page with an empty card on it
+   * is a landing page that shows nothing. So the default card lives here, is
+   * drawn once, and never touches `photos`.
+   */
+  const [demo, setDemo] = useState<string[]>([]);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -142,7 +206,7 @@ export default function App() {
       const loaded = await Promise.all(
         art.map((url, i) => frameFromDataUrl(url, `photo-${i + 1}.jpg`)),
       );
-      if (!cancelled) setPhotos(loaded);
+      if (!cancelled) setDemo(loaded.map((f) => f.url));
     })();
     return () => {
       cancelled = true;
@@ -150,6 +214,8 @@ export default function App() {
   }, []);
 
   const images = useMemo(() => photos.map((p) => p.url), [photos]);
+  /** What the belt's live slab draws: yours once there is one, the demo until. */
+  const beltImages = images.length >= 2 ? images : demo;
 
   /**
    * The belt's prints, woven once per set.
@@ -163,7 +229,7 @@ export default function App() {
   useEffect(() => {
     const base = import.meta.env.BASE_URL;
     const sets: Record<string, string[]> = {
-      astra: images.length >= 2 ? images : [],
+      astra: beltImages.length >= 2 ? beltImages : [],
       max: [1, 2, 3].map((n) => base + 'cards/max-' + n + '.jpg'),
       chandra: [1, 2, 3].map((n) => base + 'cards/chandra-' + n + '.jpg'),
       dragon: [1, 2, 3].map((n) => base + 'cards/dragon-' + n + '.jpg'),
@@ -182,7 +248,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [images]);
+  }, [beltImages]);
 
   /**
    * The column is the range, not a queue of one card.
@@ -205,7 +271,7 @@ export default function App() {
       { id: 's8', still: base + 'cards/max-2.jpg', art: 'max', name: 'Lights Out', set: 'CHROME', layout: 'chrome', kind: 'sleeve' },
     ];
   }, []);
-  const ready = photos.length > 0 && !checking && held;
+  const ready = demo.length > 0 && !checking && held;
 
   const serial = useMemo(() => {
     const seed = photos.reduce((a, p) => a + p.width * 31 + p.height * 17, photos.length);
@@ -254,6 +320,81 @@ export default function App() {
     setCardTheme(findTheme(next));
   }, []);
 
+  /**
+   * Photos dropped anywhere on the window.
+   *
+   * The dropzone was a box in the middle of one step, so a photo let go two
+   * inches to its left went to the browser instead — which navigates to the
+   * file and takes the card you were making with it. There is no way to get it
+   * back, and nothing on the page ever said the target was that small.
+   *
+   * So the window takes the drop, wherever it lands: on the home page it makes
+   * the card and walks you into the maker, in the maker it adds frames, and
+   * the veil says so while you are still holding them. The two preventDefaults
+   * are the load-bearing part — without them the browser wins.
+   */
+  const takeFiles = useCallback(
+    (files: File[]) => {
+      const images = files.filter((f) => f.type.startsWith('image/'));
+      if (!images.length) {
+        notify('Those were not photos. Drop JPG, PNG, WebP or GIF.');
+        return;
+      }
+      const room = own ? MAX_FRAMES - photos.length : MAX_FRAMES;
+      if (room <= 0) {
+        notify(`A card holds at most ${MAX_FRAMES} frames.`);
+        return;
+      }
+      if (images.length > room) {
+        notify(`Only the first ${room} of those fit — a card holds ${MAX_FRAMES} frames.`);
+      }
+      void addFiles(images.slice(0, room));
+      if (stage === 'home') openMaker();
+      else setStep('photos');
+    },
+    [own, photos.length, notify, addFiles, stage, openMaker],
+  );
+
+  useEffect(() => {
+    const carriesFiles = (event: DragEvent) =>
+      Array.from(event.dataTransfer?.types ?? []).includes('Files');
+
+    const onEnter = (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      dragDepth.current += 1;
+      setDropping(true);
+    };
+    const onOver = (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    };
+    const onLeave = (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (!dragDepth.current) setDropping(false);
+    };
+    const onDrop = (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      dragDepth.current = 0;
+      setDropping(false);
+      takeFiles(Array.from(event.dataTransfer?.files ?? []));
+    };
+
+    window.addEventListener('dragenter', onEnter);
+    window.addEventListener('dragover', onOver);
+    window.addEventListener('dragleave', onLeave);
+    window.addEventListener('drop', onDrop);
+    return () => {
+      window.removeEventListener('dragenter', onEnter);
+      window.removeEventListener('dragover', onOver);
+      window.removeEventListener('dragleave', onLeave);
+      window.removeEventListener('drop', onDrop);
+    };
+  }, [takeFiles]);
+
   if (received) {
     return (
       <Greeting
@@ -283,7 +424,7 @@ export default function App() {
                 const entryTheme = findTheme(entry.layout);
                 return (
                   <TradingCard
-                    photos={images}
+                    photos={beltImages}
                     still={isLive ? undefined : entry.still}
                     views={isLive ? undefined : woven[entry.art]?.views}
                     ratio={woven[entry.art]?.ratio}
@@ -305,6 +446,13 @@ export default function App() {
         )}
 
         {stage !== 'home' && (
+        <div className="bench-view">
+          {/* The pane the card is looked at in. A lamp above it, a floor under
+              it, and the grading plate off to one side: the object is on a
+              bench now rather than floating in the middle of a dark page with
+              the controls floating beside it. */}
+          <span className="bench-lamp" aria-hidden />
+          <span className="bench-floor" aria-hidden />
         <div className="stage-case">
           {/* The box the case comes out of. It sits in front of the lower half
               of the slab, so the slab reads as rising from inside it, then
@@ -336,12 +484,14 @@ export default function App() {
             label={copy.title}
             sublabel={`${cardTheme.set} · LENTICARD`}
             serial={serial}
+            frames={photos.length}
             kind={caseKind}
             onAngle={onAngle}
           >
             <TradingCard
               ref={cardRef}
               photos={images}
+              emptyNote={photos.length ? 'One more photo to make a lens' : 'Drop your photos'}
               ratio={woven.astra?.ratio}
               tint={woven.astra?.tint}
               theme={cardTheme}
@@ -355,6 +505,25 @@ export default function App() {
             />
           </Slab>
           </motion.div>
+        </div>
+
+          {/* What is on the bench, in the language the case already speaks. */}
+          <dl className="bench-plate">
+            <div>
+              <dt>Frames</dt>
+              <dd>
+                {photos.length} <span>/ {MAX_FRAMES}</span>
+              </dd>
+            </div>
+            <div>
+              <dt>Template</dt>
+              <dd>{cardTheme.set}</dd>
+            </div>
+            <div>
+              <dt>Cert</dt>
+              <dd className="bench-serial">{serial}</dd>
+            </div>
+          </dl>
         </div>
         )}
 
@@ -439,24 +608,12 @@ export default function App() {
                     </div>
                     <div className="field">
                       <span className="field-label">Template</span>
-                      <TemplateStrip value={layout} onPick={pickLayout} />
+                      <TemplateStrip value={layout} onPick={pickLayout} big />
                     </div>
 
                     <div className="field">
                       <span className="field-label">Case</span>
-                      <div className="choices">
-                        {CASE_KINDS.map((k) => (
-                          <button
-                            key={k.id}
-                            className="choice"
-                            title={k.hint}
-                            aria-pressed={k.id === caseKind}
-                            onClick={() => setCaseKind(k.id)}
-                          >
-                            {k.label}
-                          </button>
-                        ))}
-                      </div>
+                      <CasePicker value={caseKind} onPick={setCaseKind} />
                     </div>
                   </section>
                 )}
@@ -619,6 +776,37 @@ export default function App() {
           </>
         </Dock>
       )}
+
+      <AnimatePresence>
+        {dropping && (
+          <motion.div
+            className="drop-veil"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16, ease: EASE }}
+            aria-hidden
+          >
+            <motion.div
+              className="drop-veil-card"
+              initial={{ scale: 0.94, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.96, y: 6 }}
+              transition={{ type: 'spring', stiffness: 340, damping: 26 }}
+            >
+              <span className="drop-veil-icon">
+                <Tray size={26} weight="light" />
+              </span>
+              <strong>Drop to add frames</strong>
+              <small>
+                {stage === 'home'
+                  ? 'They become your card and the maker opens'
+                  : `${photos.length} of ${MAX_FRAMES} used`}
+              </small>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {note && (

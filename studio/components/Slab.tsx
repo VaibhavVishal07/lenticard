@@ -27,6 +27,8 @@ interface SlabProps {
   encased: boolean;
   /** The card's name, printed as the middle line of the label. */
   label?: string;
+  /** How many frames are actually in the card, for the label's number line. */
+  frames?: number;
   /** The set line above the name. */
   sublabel?: string;
   serial?: string;
@@ -59,6 +61,7 @@ export function Slab({
   label = 'Lenticular',
   sublabel = 'LENTICARD',
   serial = 'LC-0000000',
+  frames = 3,
   kind = 'slab',
   grade = '10',
   onAngle,
@@ -135,7 +138,9 @@ export function Slab({
                 <div className="lab-left">
                   <span className="lab-set">{sublabel}</span>
                   <span className="lab-name">{label}</span>
-                  <span className="lab-num">LENTICULAR · 3 FRAME</span>
+                  <span className="lab-num">
+                    LENTICULAR{frames ? ` · ${frames} FRAME` : ' · UNFILLED'}
+                  </span>
                 </div>
                 <div className="lab-grade">
                   <span className="lab-grade-w">GEM MINT</span>

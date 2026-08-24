@@ -7,6 +7,8 @@ interface TradingCardProps {
   photos: string[];
   /** The plain photograph, shown when nothing is on the card. */
   still?: string;
+  /** What the empty art window says before there are any photos. */
+  emptyNote?: string;
   /** The print at several angles, blended by the cursor. Stands in for a live
       lens on the belt, where browsers cap WebGL contexts well below the number
       of cases on screen. */
@@ -46,7 +48,7 @@ interface TradingCardProps {
  */
 export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
   function TradingCard(
-    { photos, still, views, ratio, tint, demo, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
+    { photos, still, views, ratio, tint, demo, emptyNote, theme, copy, layout, lenticules, parallax, blend, sheen, drive = 'none', onError },
     ref,
   ) {
     const art = (fill: boolean): ReactNode => (
@@ -55,6 +57,20 @@ export const TradingCard = forwardRef<LenticularCardHandle, TradingCardProps>(
           <Turn flat={still} views={views} demo={demo} />
         ) : still ? (
           <img className="tc-still" src={still} alt="" loading="lazy" />
+        ) : photos.length < 2 ? (
+          /* A lens needs two frames to have anything to refract between, so
+             before there are two the window holds the card's own outline and
+             says what goes in it. The card is still built — the template, the
+             case, the label and the grade are all there — so what you are
+             looking at is the thing you are filling rather than a placeholder
+             standing in for it. */
+          <div className="tc-empty">
+            <span className="tc-empty-mark" aria-hidden />
+            <span className="tc-empty-note">{emptyNote ?? 'Your photos go here'}</span>
+            <span className="tc-empty-count" aria-hidden>
+              {photos.length} / 2 minimum
+            </span>
+          </div>
         ) : (
         <LenticularCard
           ref={ref}

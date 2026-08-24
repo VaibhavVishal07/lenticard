@@ -1,5 +1,5 @@
-import { Reorder, useDragControls } from 'motion/react';
-import { DotsSixVertical, ImageSquare, X } from '@phosphor-icons/react';
+import { Reorder } from 'motion/react';
+import { DotsSixVertical, ImageSquare, Plus, X } from '@phosphor-icons/react';
 import { useRef, useState, type DragEvent } from 'react';
 import { MAX_FRAMES } from '../../src/core/types';
 
@@ -60,6 +60,21 @@ interface FramesProps {
   onError: (message: string) => void;
 }
 
+/**
+ * The frames, laid out the way the card reads them.
+ *
+ * This was a column of grey rows with a grip at the left edge, and it was
+ * wrong twice over. The order of these is an angle, not a rank: the first
+ * frame is what somebody sees leaning left and the last is what they see
+ * leaning right, so a column had you dragging up and down to set something
+ * that happens side to side. And the only thing you could take hold of was a
+ * twelve-pixel grip — grab the row itself, which is what anybody tries first,
+ * and nothing moved.
+ *
+ * So it is a strip, running the way the sweep runs, and the whole tile is the
+ * handle. The grip stays on as a mark, because a thing you can pick up should
+ * look like a thing you can pick up.
+ */
 export function Frames({ frames, onChange, onAdd, onError }: FramesProps) {
   const [over, setOver] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -85,28 +100,37 @@ export function Frames({ frames, onChange, onAdd, onError }: FramesProps) {
     accept(event.dataTransfer.files);
   }
 
-  const prompt = full
-    ? `That is all ${MAX_FRAMES} frames`
-    : frames.length
-      ? 'Add another photo'
-      : 'Drop photos, or click to choose';
+  const dropHandlers = {
+    onDragOver: (event: DragEvent) => {
+      event.preventDefault();
+      setOver(true);
+    },
+    onDragLeave: () => setOver(false),
+    onDrop,
+  };
 
-  const note = frames.length
-    ? `${frames.length} of ${MAX_FRAMES} · drag to reorder`
-    : 'Two or three of the same subject works best';
+  const picker = (
+    <input
+      ref={input}
+      type="file"
+      accept="image/*"
+      multiple
+      hidden
+      onChange={(event) => {
+        accept(event.target.files);
+        event.target.value = '';
+      }}
+    />
+  );
 
-  return (
-    <>
+  /* Nothing here yet, so the whole panel is the target — there is nothing else
+     in it to aim at. */
+  if (!frames.length) {
+    return (
       <div
-        className="dropzone"
+        className="fs-empty"
         data-over={over}
-        data-full={full}
-        onDragOver={(event) => {
-          event.preventDefault();
-          setOver(true);
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={onDrop}
+        {...dropHandlers}
         role="button"
         tabIndex={0}
         onClick={() => input.current?.click()}
@@ -114,75 +138,121 @@ export function Frames({ frames, onChange, onAdd, onError }: FramesProps) {
           if (event.key === 'Enter' || event.key === ' ') input.current?.click();
         }}
       >
-        <span className="dropzone-icon" aria-hidden>
-          <ImageSquare size={22} weight="light" />
+        <span className="fs-empty-icon" aria-hidden>
+          <ImageSquare size={26} weight="light" />
         </span>
-        <p>{prompt}</p>
-        <small>{note}</small>
-        <input
-          ref={input}
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-          onChange={(event) => {
-            accept(event.target.files);
-            event.target.value = '';
-          }}
-        />
+        <p>Drop photos here</p>
+        <small>or click to choose — two or three of the same subject works best</small>
+        {picker}
       </div>
+    );
+  }
 
-      {frames.length > 0 && (
-        <Reorder.Group axis="y" values={frames} onReorder={onChange} className="frames">
+  /** Move one frame along the strip: the keyboard's version of dragging it. */
+  function shift(from: number, to: number) {
+    if (to < 0 || to >= frames.length) return;
+    const next = [...frames];
+    next.splice(to, 0, next.splice(from, 1)[0]);
+    onChange(next);
+  }
+
+  return (
+    <div className="fs" data-over={over} {...dropHandlers}>
+      <div className="fs-rail">
+        <Reorder.Group axis="x" values={frames} onReorder={onChange} className="fs-tiles" as="ul">
           {frames.map((frame, index) => (
-            <FrameRow
+            <FrameTile
               key={frame.id}
               frame={frame}
               index={index}
+              count={frames.length}
               onRemove={() => onChange(frames.filter((f) => f.id !== frame.id))}
+              onShift={(delta) => shift(index, index + delta)}
             />
           ))}
         </Reorder.Group>
-      )}
-    </>
+
+        {!full && (
+          <button className="fs-add" onClick={() => input.current?.click()}>
+            <Plus size={15} weight="bold" />
+            <span>Add</span>
+          </button>
+        )}
+        {picker}
+      </div>
+
+      {/* What the order of the strip means, said once, under the strip. */}
+      <div className="fs-sweep" aria-hidden>
+        <span>tilt left</span>
+        <span className="fs-sweep-line" />
+        <span>tilt right</span>
+      </div>
+
+      <p className="fs-note">
+        <DotsSixVertical size={13} weight="bold" />
+        Drag a frame to reorder{full ? '' : ', or drop more anywhere on the page'}
+        <b>
+          {frames.length} of {MAX_FRAMES}
+        </b>
+      </p>
+    </div>
   );
 }
 
-function FrameRow({
+function FrameTile({
   frame,
   index,
+  count,
   onRemove,
+  onShift,
 }: {
   frame: Frame;
   index: number;
+  count: number;
   onRemove: () => void;
+  onShift: (delta: number) => void;
 }) {
-  const controls = useDragControls();
   const ratio = frame.width / frame.height;
   const shape = ratio >= 1.15 ? 'landscape' : ratio <= 0.87 ? 'portrait' : 'square';
+  const slot = POSITION[index] ?? `Frame ${index + 1}`;
 
   return (
     <Reorder.Item
       value={frame}
-      className="frame"
-      dragListener={false}
-      dragControls={controls}
-      whileDrag={{ scale: 1.02, boxShadow: '0 12px 28px -10px rgba(0,0,0,0.8)' }}
+      className="fs-tile"
+      whileDrag={{ scale: 1.06, zIndex: 4 }}
+      transition={{ type: 'spring', stiffness: 620, damping: 44 }}
+      tabIndex={0}
+      aria-label={`${slot}: ${frame.name}. Arrow keys move it along the strip.`}
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          onShift(-1);
+        }
+        if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          onShift(1);
+        }
+      }}
     >
-      <span className="grip" onPointerDown={(event) => controls.start(event)} aria-hidden>
-        <DotsSixVertical size={16} weight="bold" />
-      </span>
-      <img src={frame.url} alt="" />
-      <span className="frame-meta">
-        <span className="frame-slot">{POSITION[index] ?? `Frame ${index + 1}`}</span>
-        <span className="frame-name">{frame.name}</span>
-        <span className="frame-sub">
-          {frame.width}×{frame.height} · {shape}
+      <span className="fs-shot">
+        <img src={frame.url} alt="" draggable={false} />
+        <span className="fs-grip" aria-hidden>
+          <DotsSixVertical size={13} weight="bold" />
         </span>
+        <button
+          className="fs-kill"
+          /* The tile is the drag handle, so this has to keep the press to
+             itself — otherwise removing a frame starts by dragging it. */
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={onRemove}
+          aria-label={`Remove ${frame.name}`}
+        >
+          <X size={11} weight="bold" />
+        </button>
       </span>
-      <button className="icon-btn" onClick={onRemove} aria-label={`Remove ${frame.name}`}>
-        <X size={14} weight="bold" />
-      </button>
+      <span className="fs-slot">{slot}</span>
+      <span className="fs-sub">{count > 4 ? shape : `${frame.width}×${frame.height}`}</span>
     </Reorder.Item>
   );
 }

@@ -275,70 +275,248 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 }
 
 /* =========================================================================
-   Photos
+   Photos — the frame strip
+
+   The order of these frames is an angle rather than a rank, so they run the
+   way the sweep runs: first at full left tilt, last at full right, and the
+   ribbon under them says which end is which. Every tile is its own handle.
    ========================================================================= */
 
-.dropzone {
+/* Before there is anything to reorder, the whole panel is the target. */
+.fs-empty {
   display: grid;
   justify-items: center;
-  gap: 0.2rem;
-  padding: 1rem;
+  gap: 0.3rem;
+  padding: 2rem 1.25rem;
   border: 1px dashed var(--hair-2);
-  border-radius: 0.8rem;
+  border-radius: 1rem;
   background: rgba(255, 255, 255, 0.03);
   color: var(--ink-2);
   cursor: pointer;
   text-align: center;
   transition: border-color 200ms var(--ease), background 200ms var(--ease);
 }
-.dropzone:hover, .dropzone[data-over='true'] {
+.fs-empty:hover,
+.fs-empty[data-over='true'] {
   border-color: rgba(255, 255, 255, 0.45);
   background: rgba(255, 255, 255, 0.06);
 }
-.dropzone p { margin: 0; font-size: 0.8125rem; font-weight: 500; }
-.dropzone small { color: var(--ink-3); font-size: 0.6875rem; }
+.fs-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: 0.35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink-2);
+}
+.fs-empty p { margin: 0; font-size: 0.9375rem; font-weight: 600; color: var(--ink); }
+.fs-empty small { color: var(--ink-3); font-size: 0.75rem; max-width: 26ch; line-height: 1.45; }
 
-.frames { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.3rem; }
+.fs { display: grid; gap: 0.55rem; }
 
-.frame {
+/* A shallow well, so the strip reads as frames sitting in a tray rather than
+   as four buttons in a row. */
+.fs-rail {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-radius: 0.95rem;
+  border: 1px solid var(--hair);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: border-color 180ms var(--ease), background 180ms var(--ease);
+}
+.fs[data-over='true'] .fs-rail {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.fs-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.fs-tile {
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+  justify-items: center;
+  cursor: grab;
+  /* Off, or a drag along the strip is read as a scroll on a touch screen. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.fs-tile:active { cursor: grabbing; }
+.fs-tile:focus-visible { outline: none; }
+.fs-tile:focus-visible .fs-shot {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px #5ce1ff;
+}
+
+.fs-shot {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #0a0b0f;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 6px 16px -8px rgba(0, 0, 0, 0.9);
+  transition: box-shadow 200ms var(--ease), transform 200ms var(--ease);
+}
+.fs-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fs-tile:hover .fs-shot { transform: translateY(-2px); }
+.fs-tile:hover .fs-shot,
+.fs-tile:focus-within .fs-shot {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.32),
+    0 10px 22px -10px rgba(0, 0, 0, 0.95);
+}
+
+/* The grip and the cross only come up under the pointer: at rest the strip
+   should read as three pictures, not as three pictures wearing furniture. */
+.fs-grip,
+.fs-kill {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 160ms var(--ease);
+}
+.fs-tile:hover .fs-grip,
+.fs-tile:hover .fs-kill,
+.fs-tile:focus-within .fs-grip,
+.fs-tile:focus-within .fs-kill { opacity: 1; }
+
+.fs-grip {
+  left: 50%;
+  bottom: 0.28rem;
+  translate: -50% 0;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  background: rgba(8, 9, 12, 0.72);
+  color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(6px);
+}
+
+.fs-kill {
+  top: 0.25rem;
+  right: 0.25rem;
+  display: grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(8, 9, 12, 0.78);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+.fs-kill:hover { background: #ff3b6b; }
+
+.fs-slot {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-sub {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Same footprint as a tile so the row stays even as frames come and go. */
+.fs-add {
+  /* Matched to a tile's picture rather than to the rail, so it does not run
+     down past the labels beside it. */
+  flex: 0 0 3.4rem;
+  align-self: start;
+  aspect-ratio: 5 / 7;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.25rem;
+  border: 1px dashed var(--hair-2);
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--ink-3);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 180ms var(--ease), border-color 180ms var(--ease),
+    background 180ms var(--ease);
+}
+.fs-add:hover {
+  color: var(--ink);
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* The sweep the order describes, drawn in the accent the card is made of. */
+.fs-sweep {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.35rem;
-  border-radius: 0.6rem;
-  border: 1px solid var(--hair);
-  background: rgba(255, 255, 255, 0.035);
-}
-.frame img {
-  width: 44px;
-  height: 32px;
-  object-fit: cover;
-  border-radius: 0.35rem;
-  flex-shrink: 0;
-  pointer-events: none;
-}
-.frame-meta { min-width: 0; flex: 1; display: grid; }
-.frame-name { font-size: 0.78125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.frame-sub {
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  color: var(--ink-3);
-  font-variant-numeric: tabular-nums;
-}
-.frame-index {
-  display: grid;
-  place-items: center;
-  width: 1.15rem;
-  height: 1.15rem;
-  border-radius: 0.3rem;
-  background: rgba(255, 255, 255, 0.09);
-  font-family: var(--font-mono);
+  padding-inline: 0.15rem;
   font-size: 0.5625rem;
-  color: var(--ink-2);
-  flex-shrink: 0;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
 }
-.grip { display: grid; place-items: center; cursor: grab; color: var(--ink-3); }
-.grip:active { cursor: grabbing; }
+.fs-sweep-line {
+  flex: 1;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--holo);
+  background-size: 220% 100%;
+  opacity: 0.55;
+  animation: holo-drift-x 9s linear infinite;
+}
+
+.fs-note {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+.fs-note b {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--ink-2);
+}
 
 /* =========================================================================
    Greeting
@@ -618,7 +796,17 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   transition: color 220ms var(--ease), background 220ms var(--ease);
 }
 .step-tab:hover { color: var(--ink); }
-.step-tab[aria-pressed='true'] { background: var(--ink); color: var(--bg); font-weight: 700; }
+/* The one loud control in the panel. A flat white pill said "selected"; the
+   accent says which product you are inside — it is the same sweep as the
+   button on the landing page and the ribbon under the frames. */
+.step-tab[aria-pressed='true'] {
+  color: var(--holo-ink);
+  font-weight: 700;
+  background-image: var(--holo);
+  background-size: 220% 100%;
+  animation: holo-drift-x 9s linear infinite;
+  box-shadow: 0 6px 18px -10px rgba(123, 123, 255, 0.9);
+}
 
 .step-n {
   display: grid;
@@ -631,7 +819,7 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   font-size: 0.625rem;
   font-weight: 800;
 }
-.step-tab[aria-pressed='true'] .step-n { background: var(--bg); color: var(--ink); }
+.step-tab[aria-pressed='true'] .step-n { background: rgba(0, 0, 0, 0.34); color: #fff; }
 
 .step-body {
   display: grid;
@@ -1461,8 +1649,11 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   cursor: pointer;
   transition: color 200ms var(--ease), background 200ms var(--ease);
 }
-.step-tab:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
-.step-tab[aria-pressed='true'] { background: #fff; color: #08090c; }
+/* :not(pressed) matters — `background` is a shorthand, so an unguarded hover
+   resets the selected tab's background-image and the accent vanishes under
+   the pointer that just chose it. */
+.step-tab:not([aria-pressed='true']):hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+.step-tab[aria-pressed='true'] { color: var(--holo-ink); }
 
 .step-n {
   display: grid;
@@ -1475,7 +1666,7 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   font-size: 0.625rem;
   font-weight: 800;
 }
-.step-tab[aria-pressed='true'] .step-n { background: #08090c; color: #fff; }
+.step-tab[aria-pressed='true'] .step-n { background: rgba(0, 0, 0, 0.34); color: #fff; }
 
 /* =========================================================================
    The one white control
@@ -1563,23 +1754,116 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
    rather than running off the bottom of the page.
    ========================================================================= */
 
+/* Two panes, not two islands.
+   These were a small card and a small panel floating in the middle of a wide
+   dark page, with more black around them than object in them — the landing
+   page next door is full-bleed and this read as its settings dialog. So the
+   maker takes the whole window and divides it once: the card gets a bench
+   with a light over it on the left, the controls get a panel that runs floor
+   to ceiling on the right, and a single hairline is the join. */
 .stage[data-stage='make'],
 .stage[data-stage='send'] {
-  align-items: center;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  padding-block: clamp(1.5rem, 4vh, 2.5rem) 7rem;
-  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) minmax(min(26rem, 46vw), 0.78fr);
+  max-width: none;
+  margin-inline: 0;
+  padding: 0;
+  gap: 0;
+  min-height: 100dvh;
 }
+
+.bench-view {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: clamp(1.5rem, 4vh, 3rem) var(--gutter) 13rem;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* The lamp. A cone from above the card, so the pane has a source and the
+   floor under the case has a reason to be brighter in the middle. */
+.bench-lamp {
+  position: absolute;
+  inset: -20% -10% 30%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(52% 46% at 50% 34%, rgba(140, 152, 210, 0.2), transparent 70%),
+    radial-gradient(30% 24% at 50% 30%, rgba(255, 255, 255, 0.08), transparent 72%);
+}
+
+/* What the case is standing on: a soft ellipse of contact, then a horizon. */
+.bench-floor {
+  position: absolute;
+  left: 50%;
+  bottom: 11.5rem;
+  z-index: -1;
+  width: min(30rem, 76%);
+  height: 8rem;
+  translate: -50% 0;
+  pointer-events: none;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(120, 132, 190, 0.16), transparent 72%);
+}
+.bench-floor::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--hair-2), transparent);
+}
+
+/* The bench's read-out, in the language the grading label already speaks. */
+.bench-plate {
+  position: absolute;
+  left: 50%;
+  /* Clear of the dock, which is centred on the window rather than on this
+     pane and so runs straight through the middle of it. */
+  bottom: 9rem;
+  translate: -50% 0;
+  display: flex;
+  gap: 1.6rem;
+  margin: 0;
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--hair);
+  border-radius: 0.7rem;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  white-space: nowrap;
+}
+.bench-plate div { display: grid; gap: 0.1rem; }
+.bench-plate dt {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.bench-plate dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.bench-plate dd span { color: var(--ink-3); font-weight: 500; }
+.bench-serial { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; }
 
 .stage[data-stage='make'] .stage-case,
 .stage[data-stage='send'] .stage-case {
-  width: min(300px, 100%);
+  width: min(330px, 100%);
   justify-self: center;
 }
 
 .stage[data-stage='make'] .stage-side,
 .stage[data-stage='send'] .stage-side {
-  max-height: calc(100dvh - 10rem);
+  border-left: 1px solid var(--hair);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+  padding: clamp(1.5rem, 4vh, 2.75rem) clamp(1.25rem, 2.6vw, 2rem) 7.5rem;
+  max-height: 100dvh;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-right: 0.35rem;
@@ -1735,8 +2019,151 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 
 /* --- the maker, with room between things --------------------------------- */
 
-.stage[data-stage='make'] .stage-case,
-.stage[data-stage='send'] .stage-case { width: min(340px, 100%); }
+
+.editor { gap: 1.1rem; }
+.steps { gap: 0.35rem; padding: 0.35rem; }
+.step-body { gap: 1.4rem; padding: 1.5rem 1.5rem 1.65rem; }
+.step-head { gap: 0.3rem; }
+.field { gap: 0.6rem; }
+.choices { gap: 0.5rem; }
+.swatches { gap: 0.5rem; }
+
+/* --- photos --------------------------------------------------------------- */
+
+.fs { gap: 0.7rem; }
+.fs-rail { gap: 0.6rem; padding: 0.7rem; }
+.fs-tiles { gap: 0.5rem; }
+.fs-slot { font-size: 0.625rem; }
+.fs-sub { font-size: 0.625rem; }
+.fs-note { font-size: 0.78125rem; }
+.choice { font-size: 0.8125rem; padding: 0.42rem 0.85rem; }
+
+/* The pitch was cramped between its own lines. */
+.pitch { gap: 1.5rem; }
+.pitch h1 { margin-bottom: -0.15rem; }
+
+@media (max-width: 940px) {
+  .stage[data-stage='make'],
+  .stage[data-stage='send'] {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+  .stage[data-stage='make'] .stage-side,
+  .stage[data-stage='send'] .stage-side { max-height: none; overflow: visible; }
+  .stage[data-stage='make'] .stage-case,
+  .stage[data-stage='send'] .stage-case { width: min(240px, 62vw); }
+}
+
+/* =========================================================================
+   L1 → L2: one case out of the box
+
+   Two beats. The column and the pitch drop back first, then a single case
+   rises out of a box drawn in front of its lower half. Swapping the stage on
+   the click was a cut, and a cut is what made it feel broken.
+   ========================================================================= */
+
+.stage[data-leaving='true'] .stage-stack,
+.stage[data-leaving='true'] .pitch {
+  opacity: 0 !important;
+  transform: translateY(16px) scale(0.982) !important;
+  transition: opacity 240ms var(--ease), transform 240ms var(--ease);
+}
+
+.stage-case { position: relative; perspective: 1300px; }
+.case-lift { transform-style: preserve-3d; transform-origin: 50% 90%; }
+
+.case-box {
+  position: absolute;
+  left: -9%;
+  right: -9%;
+  bottom: -5%;
+  height: 44%;
+  z-index: 6;
+  pointer-events: none;
+  border-radius: 0.6rem 0.6rem 1.2rem 1.2rem;
+  background:
+    linear-gradient(180deg, #1c202a 0%, #10131a 44%, #07080c 100%);
+  box-shadow:
+    inset 0 0.09rem 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1.4rem 2.4rem -1.4rem rgba(0, 0, 0, 0.9),
+    0 1.4rem 3rem -1.2rem rgba(0, 0, 0, 0.85);
+}
+/* The open lip, so it reads as a box and not a rectangle. */
+.case-box::before {
+  content: '';
+  position: absolute;
+  inset: -0.18rem 6% auto;
+  height: 0.36rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.24), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case-box { display: none; }
+  .stage[data-leaving='true'] .stage-stack,
+  .stage[data-leaving='true'] .pitch { transition: none; }
+}
+
+/* =========================================================================
+   Pass: spacing, scale, and the card inside the case
+
+   The pitch had no display mode, so its gap did nothing and every line sat on
+   the one above it. The card sat in a casing padded like a picture frame. The
+   column ran at a size that made a trading card look like a thumbnail. All
+   three are here.
+   ========================================================================= */
+
+/* --- the pitch, given a rhythm ------------------------------------------ */
+
+/* Not one uniform gap: the mark belongs to the headline, the hint belongs to
+   the button, and the lede needs air before you are asked to do something. */
+.pitch {
+  display: grid;
+  justify-items: start;
+  gap: 0;
+}
+.pitch .mark-hero { margin-bottom: 1.25rem; }
+.pitch h1 { margin: 0 0 1.45rem; line-height: 0.98; }
+.pitch .lede { margin: 0 0 2.35rem; }
+.pitch .btn-xl { margin-bottom: 1.05rem; }
+.pitch .hint { margin: 0; }
+
+/* --- the landing column, a third larger ---------------------------------- */
+
+.stage { max-width: 1440px; }
+
+.stage[data-stage='home'] > .stage-stack {
+  width: min(390px, 100%);
+  /* Room on both sides so a slab leaning under the pointer is never sliced
+     off by the clip that makes the belt loop. */
+  padding-inline: 3.25rem;
+  margin-inline: -3.25rem;
+}
+.stack-track { gap: 1.75rem; padding-block: 1.75rem; }
+.stack-slot[data-held='true'] { transform: scale(1.04) translateZ(36px); }
+
+/* --- inside the case ----------------------------------------------------- */
+
+/* The holder was padded like a picture frame, which left the card small and
+   its corners running into the well. These are the proportions of the real
+   thing: label across the top, a thin ledge, then the card nearly the full
+   width of the shell. */
+.lab-tray { inset: 3cqw 3.4cqw auto; height: 23cqw; }
+.slab-ledge { left: 2.2cqw; right: 2.2cqw; top: 27.4cqw; }
+.slab-well { inset: 28.8cqw 5.2cqw 2.6cqw; }
+.slab-card { left: 7.4cqw; right: 7.4cqw; top: 30.2cqw; }
+
+/* A still in a template's art window, for the slabs that are not the live
+   one. Without a size it collapses and the template frames nothing. */
+.tc-still {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --- the maker, with room between things --------------------------------- */
+
 
 .editor { gap: 1.1rem; }
 .steps { gap: 0.35rem; padding: 0.35rem; }
@@ -2548,4 +2975,317 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 
 @media (prefers-reduced-motion: reduce) {
   .stack-slot { animation: none; }
+}
+
+/* =========================================================================
+   The design step — what is being chosen, drawn rather than named
+
+   Both pickers here used to be captions: four thumbnails the size of a stamp,
+   and four words in four pills. Between them they were the only place in the
+   maker where you had to already know the answer to pick one. Drawn at a size
+   you can read, the miniature is the explanation and the label just confirms.
+   ========================================================================= */
+
+.strip-row-big { gap: 0.6rem; flex-wrap: nowrap; }
+
+.mini-big {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-items: stretch;
+  text-align: left;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  transition: color 220ms var(--ease), transform 200ms var(--ease),
+    border-color 220ms var(--ease), background 220ms var(--ease);
+}
+.mini-big:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.04); }
+.mini-big[aria-pressed='true'] {
+  border-color: var(--hair-2);
+  background: rgba(255, 255, 255, 0.055);
+}
+.mini-big .mini-face {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 5 / 7;
+  border-radius: 0.4rem;
+}
+/* The selected ring is the accent rather than a white outline: the swatch
+   under it is already a colour, and a white ring fought every one of them. */
+.mini-big[aria-pressed='true'] .mini-face {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3.5px #7b7bff,
+    0 10px 24px -10px #000;
+}
+.mini-big .mini-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mini-hint {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: 0.625rem;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+
+/* --- the case ------------------------------------------------------------ */
+
+.cases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+
+.case-pick {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0.1rem 0.7rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--hair);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--ink-2);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 200ms var(--ease), background 200ms var(--ease),
+    color 200ms var(--ease);
+}
+.case-pick:hover { color: var(--ink); border-color: var(--hair-2); background: rgba(255, 255, 255, 0.05); }
+.case-pick[aria-pressed='true'] {
+  color: var(--ink);
+  border-color: rgba(123, 123, 255, 0.75);
+  background: rgba(123, 123, 255, 0.1);
+}
+
+.case-name { grid-column: 2; font-size: 0.78125rem; font-weight: 600; }
+.case-hint {
+  grid-column: 2;
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--ink-3);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Each holder, drawn small: the card is the pale block, and what is around it
+   is the difference between the four. */
+.case-art {
+  grid-row: 1 / 3;
+  position: relative;
+  width: 2.6rem;
+  height: 3.3rem;
+  border-radius: 0.2rem;
+  background: linear-gradient(165deg, #2a2f3c, #12141b);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.case-art::after {
+  content: '';
+  position: absolute;
+  border-radius: 0.1rem;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16));
+}
+/* Slab: a white grading label across the head, card suspended below it. */
+.case-pick[data-case='slab'] .case-art::before {
+  content: '';
+  position: absolute;
+  inset: 8% 10% auto;
+  height: 22%;
+  border-radius: 0.06rem;
+  background: #e9ecf3;
+}
+.case-pick[data-case='slab'] .case-art::after { inset: 36% 16% 10%; }
+/* Toploader: clear all the way up, printing along the foot. */
+.case-pick[data-case='toploader'] .case-art {
+  background: linear-gradient(165deg, rgba(190, 210, 235, 0.22), rgba(20, 24, 32, 0.9));
+}
+.case-pick[data-case='toploader'] .case-art::before {
+  content: '';
+  position: absolute;
+  inset: auto 8% 6%;
+  height: 9%;
+  border-radius: 0.06rem;
+  background: rgba(255, 255, 255, 0.5);
+}
+.case-pick[data-case='toploader'] .case-art::after { inset: 9% 12% 20%; }
+/* Sleeve: soft, with a flap folded over the top. */
+.case-pick[data-case='sleeve'] .case-art {
+  border-radius: 0.2rem 0.2rem 0.45rem 0.45rem;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.14), rgba(16, 19, 26, 0.92));
+}
+.case-pick[data-case='sleeve'] .case-art::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 16%;
+  border-radius: 0.2rem 0.2rem 0 0;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.case-pick[data-case='sleeve'] .case-art::after { inset: 22% 13% 8%; opacity: 0.75; }
+/* Pack: sealed, printed header, and you cannot see the card at all. */
+.case-pick[data-case='pack'] .case-art {
+  background: linear-gradient(165deg, #3b2b5e, #171226);
+}
+.case-pick[data-case='pack'] .case-art::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 26%;
+  border-radius: 0.2rem 0.2rem 0 0;
+  background: var(--holo);
+  background-size: 220% 100%;
+  opacity: 0.85;
+  animation: holo-drift-x 9s linear infinite;
+}
+.case-pick[data-case='pack'] .case-art::after {
+  inset: 34% 18% 14%;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+/* =========================================================================
+   Dropping photos on the window
+   ========================================================================= */
+
+.drop-veil {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  /* Nothing here takes the pointer: the window is the drop target, and a
+     surface in front of it would be a second one to miss. */
+  pointer-events: none;
+  background: rgba(6, 7, 10, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.drop-veil-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 2.4rem 3rem;
+  border-radius: 1.4rem;
+  text-align: center;
+  background: rgba(14, 16, 22, 0.9);
+  box-shadow: var(--cast);
+  /* A dashed accent border, drawn as a mask so the sweep runs through it. */
+  position: relative;
+}
+.drop-veil-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--holo);
+  background-size: 220% 100%;
+  animation: holo-drift-x 9s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.drop-veil-icon {
+  display: grid;
+  place-items: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  margin-bottom: 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--ink);
+}
+.drop-veil-card strong { font-size: 1.125rem; letter-spacing: -0.02em; }
+.drop-veil-card small { font-size: 0.8125rem; color: var(--ink-2); }
+
+/* =========================================================================
+   The maker on a narrow window — one column, card above its controls
+   ========================================================================= */
+
+@media (max-width: 900px) {
+  .stage[data-stage='make'],
+  .stage[data-stage='send'] {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+  .bench-view { padding-bottom: 2rem; }
+  .bench-plate { position: static; translate: none; margin-top: 1.25rem; }
+  .bench-floor { bottom: 1.5rem; }
+  .stage[data-stage='make'] .stage-side,
+  .stage[data-stage='send'] .stage-side {
+    border-left: 0;
+    border-top: 1px solid var(--hair);
+    max-height: none;
+    overflow: visible;
+  }
+  .cases { grid-template-columns: minmax(0, 1fr); }
+  .strip-row-big { flex-wrap: wrap; }
+  .mini-big { flex-basis: calc(50% - 0.3rem); }
+}
+
+/* =========================================================================
+   The empty art window
+
+   What the case holds before there are photos in it. Everything printed on
+   the card is already there — template, label, grade, serial — and only the
+   picture is missing, which is the state the maker actually opens in.
+   ========================================================================= */
+
+.tc-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 8%;
+  text-align: center;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.028) 0 6px,
+      transparent 6px 12px
+    ),
+    radial-gradient(70% 60% at 50% 42%, rgba(123, 123, 255, 0.16), transparent 72%),
+    #0a0b10;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* The ridges the card is made of, at rest and waiting for something to
+   refract — the one part of a lenticular card you can draw with no picture. */
+.tc-empty-mark {
+  width: 42%;
+  height: 2.5rem;
+  border-radius: 0.25rem;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.42) 0 1px,
+      transparent 1px 5px
+    );
+  mask-image: radial-gradient(70% 100% at 50% 50%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(70% 100% at 50% 50%, #000 30%, transparent 100%);
+}
+
+.tc-empty-note {
+  font-size: 3.4cqw;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.82);
+}
+.tc-empty-count {
+  font-family: var(--font-mono);
+  font-size: 2.5cqw;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.34);
 }
