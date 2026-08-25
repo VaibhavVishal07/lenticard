@@ -24,7 +24,7 @@
 }
 
 :root {
-  --font: 'Satoshi', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font: 'Open Sauce One', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
@@ -581,10 +581,10 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   inset: 0;
   z-index: 30;
   display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 0.9rem;
-  background: var(--bg);
+  place-items: center;
+  overflow: hidden;
+  /* Flat and dark. The only light in here is the one on the packet. */
+  background: #07070c;
 }
 
 .mark { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; letter-spacing: -0.04em; }
@@ -602,20 +602,7 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 .mark-lg .mark-chip { width: 30px; height: 22px; border-radius: 6px; }
 @keyframes holo-drift { to { background-position: 0 0, 260% 0; } }
 
-.loading-bar { width: 104px; height: 2px; border-radius: 99px; background: var(--hair); overflow: hidden; }
-.loading-bar span {
-  display: block;
-  height: 100%;
-  width: 38%;
-  border-radius: 99px;
-  background: var(--holo);
-  background-size: 300% 100%;
-  animation: loading-slide 1.35s var(--ease) infinite;
-}
-@keyframes loading-slide {
-  from { transform: translateX(-120%); }
-  to { transform: translateX(360%); }
-}
+/* The wait draws a packet being opened; see the end of this file. */
 
 /* =========================================================================
    Stage — one card, mounted once; the page moves around it
@@ -1120,9 +1107,24 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   will-change: transform;
 }
 
+/* Out of the case, every part of the case goes — the rear shell included.
+
+   It was the one layer left out of this list, and leaving it cost the whole
+   message. `.slab-rear` is an opaque panel parked at translateZ(26px), chosen
+   so that turning the assembly (which negates z) drops it behind a card
+   sitting at z 14. But the card only sits at 14 while it is encased: taken
+   out it animates to z 110, so the turn puts it at -110 and leaves the rear
+   shell at -26 — in front of it — covering the reverse completely. Turning a
+   card that is out of its case showed a blank face.
+
+   Pushing the shell further back would fix the ordering and break the
+   silhouette, because a big translateZ is scaled by the perspective. There is
+   no case to draw the back of once the card is out, so it fades with the rest
+   of it. */
 .slab[data-encased='false'] .slab-back,
 .slab[data-encased='false'] .slab-shell,
 .slab[data-encased='false'] .slab-glass,
+.slab[data-encased='false'] .slab-rear,
 .slab[data-encased='false'] .slab-edge {
   opacity: 0;
   transition: opacity 460ms var(--ease);
@@ -1131,6 +1133,7 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 .slab[data-encased='true'] .slab-back,
 .slab[data-encased='true'] .slab-shell,
 .slab[data-encased='true'] .slab-glass,
+.slab[data-encased='true'] .slab-rear,
 .slab[data-encased='true'] .slab-edge { transition: opacity 520ms var(--ease) 240ms; }
 
 /* =========================================================================
@@ -5289,11 +5292,33 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
    to be because the field no longer accepts more than fits on the card.
    ========================================================================= */
 
-.secret[data-size='xl'] .secret-layer { font-size: max(26px, 12.4cqw); }
-.secret[data-size='lg'] .secret-layer { font-size: max(23px, 10.6cqw); }
-.secret[data-size='md'] .secret-layer { font-size: max(21px, 9cqw); }
-.secret[data-size='sm'] .secret-layer { font-size: max(19px, 7.6cqw); }
-.secret[data-size='xs'] .secret-layer { font-size: max(17px, 6.4cqw); }
+/* One size, computed from the length in CardReverse and handed down as
+   --secret-cqw. The stepped sizes stay as the fallback for anything that
+   renders before the property lands.
+
+   The floors used to be 16-26px, which is bigger than a belt card can hold:
+   on a phone every card back was pinned to a flat 23px whatever its size,
+   leaving 7px between the last word and the printed frame. It held in a
+   serif and broke out of the frame in the hand the card is actually set in,
+   which is wider. The floor is a legibility backstop now, not a size — the
+   card is measured in cqw, so the writing on it should be too. */
+.secret .secret-layer { font-size: max(11px, var(--secret-cqw, 9cqw)); }
+.secret[data-size='xl'] .secret-layer { font-size: max(12px, var(--secret-cqw, 12.4cqw)); }
+.secret[data-size='lg'] .secret-layer { font-size: max(12px, var(--secret-cqw, 10.6cqw)); }
+.secret[data-size='md'] .secret-layer { font-size: max(11px, var(--secret-cqw, 9cqw)); }
+.secret[data-size='sm'] .secret-layer { font-size: max(11px, var(--secret-cqw, 7.6cqw)); }
+.secret[data-size='xs'] .secret-layer { font-size: max(10px, var(--secret-cqw, 6.4cqw)); }
+
+/* Honest margin between the writing and the printed border, so a wider hand
+   than the one on this machine still lands inside it. */
+.secret { padding-inline: 2cqw; }
+
+/* A long note is set tighter as well as smaller, so the extra lines it needs
+   come out of the leading rather than off the bottom of the card. */
+.secret[data-size='sm'] .secret-layer,
+.secret[data-size='xs'] .secret-layer { line-height: 1.16; }
+
+.tc-back-inner > .secret { min-height: 0; }
 
 /* A last line of defence. The cap is sized so this never fires, but nothing
    should ever be able to bleed off the edge of a card. */
@@ -5430,3 +5455,768 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   transition: background 0.25s, color 0.25s, scale 0.25s;
 }
 .step-tab[aria-pressed='true'] .step-n { scale: 1.08; }
+
+
+/* --- Writing on the back ------------------------------------------------
+   Reaching for the message field already turns the case over. It now also
+   brings it forward and turns the lamp up, so the card is the thing being
+   written on rather than a preview off to one side. */
+
+.bench-view .case-lift {
+  transition:
+    scale 0.55s var(--ease),
+    translate 0.55s var(--ease);
+}
+
+.bench-view[data-writing='true'] .case-lift {
+  scale: 1.1;
+  translate: 0 -1.5%;
+}
+
+/* Everything that is not the card steps back while it is being written. */
+.bench-view[data-writing='true'] .bench-plate,
+.bench-view[data-writing='true'] .bench-rail,
+.bench-view[data-writing='true'] .bench-ticks {
+  opacity: 0.3;
+}
+
+.bench-plate,
+.bench-rail,
+.bench-ticks { transition: opacity 0.45s var(--ease); }
+
+.bench-view[data-writing='true'] .bench-lamp { opacity: 1.35; }
+.bench-view[data-writing='true'] .bench-pool { opacity: 0.85; }
+.bench-lamp, .bench-pool { transition: opacity 0.5s var(--ease); }
+
+/* The plate fades up once the lift has landed. */
+.bench-plate[data-settled='false'] { opacity: 0; }
+.bench-plate[data-settled='true'] { opacity: 1; transition: opacity 0.4s var(--ease) 0.12s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bench-view .case-lift { transition: none; }
+  .bench-view[data-writing='true'] .case-lift { scale: 1; translate: 0; }
+}
+
+/* --- The step panel -----------------------------------------------------
+   The panel sat beside a lit object looking like a settings dialog. It gets
+   the same light now: a holo edge along the top of the working area, a lit
+   rule under the heading, and inputs that answer when you are in them. */
+
+.step-body {
+  position: relative;
+  border-radius: 1.1rem;
+}
+
+.step-body::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  border-radius: 1px;
+  background: var(--holo);
+  background-size: 300% 100%;
+  opacity: 0.7;
+  animation: holo-drift 9s linear infinite;
+  pointer-events: none;
+}
+
+.step-head {
+  position: relative;
+  padding-bottom: 0.85rem;
+}
+
+/* A rule that starts in the accent and runs out, rather than a flat hairline
+   across the whole panel. */
+.step-head::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, #7fd6ff 70%, transparent),
+    color-mix(in oklab, #b388ff 35%, transparent) 38%,
+    transparent 82%
+  );
+}
+
+.step-head h2 { letter-spacing: -0.03em; }
+
+.step-tab { transition: color 0.24s var(--ease), background 0.24s var(--ease); }
+
+.step-tab .step-n {
+  transition: background 0.24s var(--ease), color 0.24s var(--ease),
+    box-shadow 0.24s var(--ease);
+}
+
+.step-tab[aria-selected='true'] .step-n,
+.step-tab[data-active='true'] .step-n {
+  box-shadow: 0 0 0 3px color-mix(in oklab, #7fd6ff 20%, transparent);
+}
+
+.reverse-field {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+
+/* The holo hairline the message card carries along its top edge. */
+.reverse-field::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--holo);
+  background-size: 300% 100%;
+  opacity: 0.75;
+  animation: holo-drift 9s linear infinite;
+}
+
+.reverse-field:focus-within {
+  border-color: color-mix(in oklab, #7fd6ff 40%, var(--hair-2));
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, #7fd6ff 18%, transparent),
+    0 1.4rem 3rem -1.6rem rgba(0, 0, 0, 0.8);
+}
+
+.text-input {
+  transition: border-color 0.22s var(--ease), box-shadow 0.22s var(--ease),
+    background 0.22s var(--ease);
+}
+
+.text-input:focus {
+  border-color: color-mix(in oklab, #7fd6ff 55%, var(--hair-2));
+  box-shadow: 0 0 0 3px color-mix(in oklab, #7fd6ff 14%, transparent);
+  outline: none;
+}
+
+/* The counter is the only number on the panel that changes while you type,
+   so it is allowed to react. */
+.field-value[data-left='few'] { color: #ffd166; }
+.field-value[data-left='none'] { color: #ff8da1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .step-body::before,
+  .reverse-field::before { animation: none; }
+}
+
+/* --- The wait -----------------------------------------------------------
+   A packet in the dark, and somebody opening it.
+
+   The first version ran every piece on the same loop at the same speed, so it
+   read as a machine cycling rather than as a thing being opened. Opening
+   something is a shape: you hold it, you tense, it gives, the light gets out,
+   and only then do you see what was inside. That shape is what the timings
+   below are — one 3.3s bar with real pauses in it, everything cued off the
+   same bar so the beats land together.
+
+     0.0 - 1.1s   it sits there. one slow breath.
+     1.1 - 1.5s   it tenses. the foil pulls tight.
+     1.5 - 2.0s   it gives. a line of light opens along the tear.
+     1.9 - 2.4s   the light gets out and floods the room.
+     2.3 - 3.6s   the card rises into it.
+     3.6 - 4.5s   it is out. it turns. hold here — this is the payoff.
+     4.5 - 3.3s   back to black.
+*/
+
+.loading-spot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(30% 26% at 50% 46%, rgba(150, 140, 255, 0.22), transparent 70%),
+    radial-gradient(58% 44% at 50% 48%, rgba(90, 84, 160, 0.14), transparent 74%);
+  opacity: 0.5;
+  animation: room-light 3.3s var(--ease) infinite;
+}
+
+/* The room comes up with the tear and goes down with the card. */
+@keyframes room-light {
+  0%, 26%  { opacity: 0.42; }
+  38%      { opacity: 1; }
+  70%, 96% { opacity: 0.82; }
+  100%     { opacity: 0.42; }
+}
+
+.loading-core {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 1.15rem;
+  /* A slow push in across the whole sequence. Small enough that nobody sees
+     it happen and large enough that the reveal feels closer than the wait. */
+  animation: room-push 3.3s var(--ease) infinite;
+}
+
+@keyframes room-push {
+  0%, 22%   { scale: 1; }
+  60%, 96%  { scale: 1.045; }
+  100%      { scale: 1; }
+}
+
+.loading-word {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  animation: word-fade 3.3s var(--ease) infinite;
+}
+
+@keyframes word-fade {
+  0%, 24%  { opacity: 0.5; }
+  40%, 82% { opacity: 1; }
+  100%     { opacity: 0.5; }
+}
+
+/* --- The packet ---------------------------------------------------------- */
+
+.pack {
+  position: relative;
+  width: 176px;
+  height: 244px;
+  display: block;
+  /* The card clears the top of the packet by most of its own height and must
+     not be clipped by the row the packet sits in. */
+  margin-top: 126px;
+}
+
+/* Everything inside the packet is placed, not flowed — the sheen, the chip
+   and the printing each sit on their own layer of it. */
+.pack > *,
+.pack-body > *,
+.pack-lid > *,
+.pack-card > * { position: absolute; }
+
+.pack-body {
+  inset: 58px 0 0;
+  border-radius: 5px 5px 11px 11px;
+  overflow: hidden;
+  background: linear-gradient(158deg, #2a1f45 0%, #191330 44%, #100c20 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -1.6rem 2.4rem -1.4rem rgba(0, 0, 0, 0.85),
+    0 1.6rem 3rem -0.9rem rgba(0, 0, 0, 0.95);
+  animation: pack-hold 3.3s var(--ease) infinite;
+}
+
+/* Foil, kept in shadow. The card that comes out of it is the bright thing;
+   at the same brightness the reveal has nothing to give. */
+.pack-sheen {
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 4px),
+    var(--holo);
+  background-size: auto, 320% 100%;
+  opacity: 0.15;
+  mix-blend-mode: screen;
+  animation: holo-drift 5s linear infinite;
+}
+
+.pack-body::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 6px;
+  background: repeating-linear-gradient(135deg, rgba(6, 5, 12, 0.9) 0 3px, transparent 3px 6px);
+}
+
+.pack-chip {
+  inset: 32px 0 auto;
+  width: 46px;
+  height: 33px;
+  margin-inline: auto;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0 1px, transparent 1px 4px),
+    var(--holo);
+  background-size: auto, 260% 100%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  animation: holo-drift 6s linear infinite;
+}
+
+.pack-name {
+  inset: 76px 0 auto;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: rgba(255, 255, 255, 0.86);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.pack-strip {
+  inset: auto 0 16px;
+  text-align: center;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.pack-strip::before { content: 'THREE FRAMES \00b7 ONE CARD'; }
+
+/* The top, which gives. */
+.pack-lid {
+  inset: 0 0 auto;
+  height: 66px;
+  border-radius: 8px 8px 2px 2px;
+  overflow: hidden;
+  transform-origin: 8% 100%;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 4px),
+    linear-gradient(158deg, #4a3775 0%, #2b2047 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  animation: pack-tear 3.3s var(--ease) infinite;
+}
+
+.pack-lid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--holo);
+  background-size: 320% 100%;
+  opacity: 0.15;
+  mix-blend-mode: screen;
+  animation: holo-drift 5s linear infinite;
+}
+
+.pack-teeth {
+  inset: auto 0 0;
+  height: 6px;
+  background: repeating-linear-gradient(135deg, rgba(6, 5, 12, 0.9) 0 3px, transparent 3px 6px);
+}
+
+/* The tear itself: a hard line of light along the seam, before anything has
+   visibly moved. This is the beat the old loop had nothing in. */
+.pack-seam {
+  inset: 55px 2px auto;
+  height: 5px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, #ffffff 14%, #ffffff 50%, #ffffff 86%, transparent);
+  opacity: 0;
+  filter: blur(1px);
+  box-shadow: 0 0 18px 4px rgba(214, 204, 255, 0.9);
+  animation: pack-seam 3.3s var(--ease) infinite;
+}
+
+/* The card. Behind the packet in paint order, so it rises from inside it
+   rather than sliding up the front. */
+.pack-card {
+  inset: 52px 19px auto;
+  height: 182px;
+  border-radius: 5px;
+  overflow: hidden;
+  opacity: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 5px),
+    linear-gradient(158deg, #5ce1ff 0%, #7b7bff 30%, #ff5ecf 62%, #ffd166 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 1.8rem 3.4rem -1rem rgba(0, 0, 0, 0.9),
+    0 0 2.4rem -0.4rem rgba(160, 150, 255, 0.5);
+  animation: pack-rise 3.3s var(--ease) infinite;
+}
+
+.pack-card-foil {
+  inset: -30% -40%;
+  background: linear-gradient(104deg, transparent 38%, rgba(255, 255, 255, 0.85) 49%, transparent 60%);
+  animation: pack-glint 3.3s var(--ease) infinite;
+}
+
+.pack-burst {
+  inset: -90px -80px 10px;
+  border-radius: 50%;
+  background: radial-gradient(
+    50% 50% at 50% 62%,
+    rgba(255, 255, 255, 0.95),
+    rgba(160, 148, 255, 0.5) 30%,
+    transparent 72%
+  );
+  opacity: 0;
+  animation: pack-burst 3.3s var(--ease) infinite;
+}
+
+/* One slow breath, then it pulls tight, then it gives. */
+@keyframes pack-hold {
+  0%       { translate: 0 0; scale: 1 1; }
+  14%      { translate: 0 -2px; scale: 0.995 1.008; }
+  21%      { translate: 0 0; scale: 1.02 0.978; }   /* the tense */
+  27%      { translate: 0 0; scale: 1 1; }
+  32%      { translate: 0 2px; scale: 1.01 0.99; }  /* the give */
+  40%, 100% { translate: 0 0; scale: 1 1; }
+}
+
+@keyframes pack-seam {
+  0%, 24%  { opacity: 0; scale: 0.5 1; }
+  29%      { opacity: 1; scale: 1 1; }
+  36%      { opacity: 0.9; scale: 1 2.4; }
+  44%      { opacity: 0; scale: 1 3.4; }
+  100%     { opacity: 0; scale: 0.5 1; }
+}
+
+@keyframes pack-tear {
+  0%, 26%  { translate: 0 0; rotate: 0deg; opacity: 1; }
+  31%      { translate: 0 -3px; rotate: -2deg; opacity: 1; }
+  38%      { translate: 14px -56px; rotate: 20deg; opacity: 1; }
+  48%      { translate: 56px -146px; rotate: 58deg; opacity: 0; }
+  99%      { translate: 56px -146px; rotate: 58deg; opacity: 0; }
+  100%     { translate: 0 0; rotate: 0deg; opacity: 1; }
+}
+
+@keyframes pack-rise {
+  0%, 30%  { translate: 0 34px; opacity: 0; rotate: 0deg; }
+  36%      { translate: 0 16px; opacity: 1; rotate: 0deg; }
+  54%      { translate: 0 -96px; opacity: 1; rotate: -2deg; }
+  68%      { translate: 0 -164px; opacity: 1; rotate: 2.5deg; }
+  72%, 96% { translate: 0 -168px; opacity: 1; rotate: -0.5deg; }   /* the hold */
+  99%      { translate: 0 -162px; opacity: 0; rotate: 0deg; }
+  100%     { translate: 0 34px; opacity: 0; rotate: 0deg; }
+}
+
+/* The light runs across the card only once it is out and turning. */
+@keyframes pack-glint {
+  0%, 62%  { translate: -48% 0; }
+  84%      { translate: 48% 0; }
+  100%     { translate: 48% 0; }
+}
+
+@keyframes pack-burst {
+  0%, 27%  { opacity: 0; scale: 0.5; }
+  33%      { opacity: 1; scale: 1.05; }
+  46%      { opacity: 0.5; scale: 1.15; }
+  74%, 96% { opacity: 0.22; scale: 1.25; }
+  100%     { opacity: 0; scale: 1.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spot,
+  .loading-core,
+  .loading-word,
+  .pack-body,
+  .pack-lid,
+  .pack-lid::before,
+  .pack-seam,
+  .pack-card,
+  .pack-card-foil,
+  .pack-burst,
+  .pack-sheen,
+  .pack-chip { animation: none; }
+  .pack-card { opacity: 1; translate: 0 -168px; }
+  .pack-lid { translate: 56px -146px; rotate: 58deg; opacity: 0; }
+  .loading-spot { opacity: 0.8; }
+}
+
+/* --- The back of the card -----------------------------------------------
+   It was a cream rectangle with a sentence on it. The back of a real card is
+   the most designed face it has: a house mark, a printed field, a frame, and
+   the small print along the foot. All of it takes the template's own accent,
+   so a chrome card and a rookie card do not have the same back. */
+
+.tc-back {
+  grid-template-rows: auto 1fr auto;
+  gap: 1.6cqw;
+  padding: 4.2cqw 4.6cqw 3.6cqw;
+}
+
+/* Engine-turning. Two sets of fine arcs crossed at a shallow angle read as
+   the guilloché on a certificate, which is what this face is pretending to
+   be — and it costs two gradients rather than an image. */
+.tc-back-guilloche {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background:
+    repeating-radial-gradient(
+      circle at 50% 38%,
+      transparent 0 2.6cqw,
+      color-mix(in oklab, var(--accent) 26%, transparent) 2.6cqw 2.75cqw
+    ),
+    repeating-linear-gradient(
+      68deg,
+      transparent 0 1.9cqw,
+      color-mix(in oklab, var(--pen, var(--ink)) 10%, transparent) 1.9cqw 2cqw
+    );
+  mask-image: radial-gradient(72% 60% at 50% 44%, #000 20%, transparent 82%);
+}
+
+/* A printed frame, inset from the edge, with the corners left open. */
+.tc-back-frame {
+  position: absolute;
+  inset: 2.4cqw;
+  z-index: 1;
+  pointer-events: none;
+  border: 0.34cqw solid color-mix(in oklab, var(--accent) 42%, transparent);
+  border-radius: 1.6cqw;
+  box-shadow: inset 0 0 0 0.24cqw color-mix(in oklab, var(--pen, var(--ink)) 12%, transparent);
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  mask-clip: content-box, border-box;
+  padding: 0;
+}
+
+/* The house mark: five ridges in a roundel, printed big and faint. */
+.tc-back-seal {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  grid-auto-flow: column;
+  align-content: center;
+  justify-content: center;
+  gap: 1.5cqw;
+  pointer-events: none;
+  opacity: 0.13;
+}
+
+.tc-back-seal i {
+  display: block;
+  width: 3.4cqw;
+  height: 26cqw;
+  border-radius: 99px;
+  background: color-mix(in oklab, var(--accent) 80%, var(--pen, var(--ink)));
+}
+
+.tc-back-seal i:nth-child(1),
+.tc-back-seal i:nth-child(5) { height: 15cqw; }
+.tc-back-seal i:nth-child(2),
+.tc-back-seal i:nth-child(4) { height: 21cqw; }
+
+/* The rail across the top. */
+.tc-back-top {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqw;
+}
+
+.tc-back-house {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.2cqw;
+  font-size: max(8px, 2.3cqw);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--pen, var(--ink)) 62%, var(--accent));
+}
+
+.tc-back-house-chip {
+  width: 4.6cqw;
+  height: 3.2cqw;
+  border-radius: 0.6cqw;
+  background:
+    repeating-linear-gradient(90deg, color-mix(in oklab, var(--pen, var(--ink)) 55%, transparent) 0 0.34cqw, transparent 0.34cqw 1cqw),
+    color-mix(in oklab, var(--accent) 70%, transparent);
+}
+
+/* The cancel. A ring with the set arcing under the template's own glyph. */
+.tc-back-post {
+  display: grid;
+  place-items: center;
+  gap: 0.1cqw;
+  width: 13cqw;
+  height: 13cqw;
+  border-radius: 50%;
+  border: 0.36cqw dashed color-mix(in oklab, var(--accent) 55%, transparent);
+  color: color-mix(in oklab, var(--pen, var(--ink)) 58%, var(--accent));
+  rotate: -9deg;
+  opacity: 0.9;
+}
+
+.tc-back-post b { font-size: max(9px, 3.4cqw); line-height: 1; }
+.tc-back-post em {
+  font-style: normal;
+  font-size: max(5px, 1.55cqw);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+/* The small print. */
+.tc-back-foot {
+  z-index: 5;
+  align-items: center;
+  gap: 1.6cqw;
+  opacity: 0.62;
+}
+
+.tc-back-bars {
+  flex: 0 0 auto;
+  width: 12cqw;
+  height: 3.2cqw;
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--pen, var(--ink)) 70%, transparent) 0 0.34cqw,
+    transparent 0.34cqw 0.62cqw,
+    color-mix(in oklab, var(--pen, var(--ink)) 70%, transparent) 0.62cqw 1.1cqw,
+    transparent 1.1cqw 1.5cqw
+  );
+}
+
+.tc-back-foot-title {
+  flex: 1 1 auto;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc-back-grade {
+  flex: 0 0 auto;
+  letter-spacing: 0.08em;
+  color: color-mix(in oklab, var(--accent) 78%, var(--pen, var(--ink)));
+}
+
+/* The message sits above the seal and inside the frame. */
+.tc-back-inner { z-index: 6; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-back-post { rotate: -9deg; }
+}
+
+
+/* --- The maker on a phone -----------------------------------------------
+   On a narrow screen the maker stacked the card above the panel and let the
+   whole page scroll, so the card left the screen the moment you started
+   working. Writing the message — the one step where the card is the preview,
+   turning over and taking the words as you type — happened with the card
+   nearly 750px above the fold.
+
+   The card is pinned instead, and the panel scrolls under it. */
+
+@media (max-width: 900px) {
+  /* Block flow rather than grid. A sticky child is trapped inside its own
+     grid row, and this has to stay put for the whole length of the panel. */
+  .stage[data-stage='make'],
+  .stage[data-stage='send'] {
+    display: block;
+    padding-bottom: 0;
+  }
+
+  .stage[data-stage='make'] .bench-view,
+  .stage[data-stage='send'] .bench-view {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    height: clamp(232px, 36dvh, 340px);
+    padding: 0.6rem var(--gutter) 0.4rem;
+    overflow: hidden;
+    /* Opaque: the panel passes underneath it. */
+    background: var(--bg);
+    box-shadow: 0 1px 0 var(--hair);
+  }
+
+  /* Sized off the band it has to sit inside, not off the width of the phone. */
+  .stage[data-stage='make'] .stage-case,
+  .stage[data-stage='send'] .stage-case { width: min(188px, 46vw); }
+
+  /* The plate and the flip come off the band so the card can have all of it.
+     The frame count is already on the Photos step, and reaching for the
+     message field turns the card by itself. */
+  .stage[data-stage='make'] .bench-plate,
+  .stage[data-stage='make'] .bench-flip,
+  .stage[data-stage='send'] .bench-plate { display: none; }
+
+  /* The card is already pinned in view, so it does not need to come forward
+     as well — and a scale inside a clipped band would crop it. */
+  .bench-view[data-writing='true'] .case-lift { scale: 1; translate: 0; }
+
+  .stage[data-stage='make'] .stage-side,
+  .stage[data-stage='send'] .stage-side { padding-top: 1.1rem; }
+
+  /* Pulled out to the panel's own edges on a desktop panel. There is no panel
+     inset down here, so the pull was just 14px of the page hanging off the
+     right-hand side of the screen. */
+  .bench-actions { margin-inline: 0; }
+
+  /* Nothing in the maker may be wider than the phone. Laying the stage out as
+     blocks dropped the `minmax(0, 1fr)` the grid column used to impose, and
+     without it the widest child set the page width. */
+  .stage[data-stage='make'] > *,
+  .stage[data-stage='send'] > * { min-width: 0; max-width: 100%; }
+
+  /* A `1fr` track will not go below its own min-content, so the step rail sat
+     at the width of its three labels — 387px of rail on a 360px screen, and
+     the whole page scrolled sideways to fit it. */
+  .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .step-tab {
+    min-width: 0;
+    gap: 0.3rem;
+    padding-inline: 0.35rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  /* The panel is a grid, and a grid item's automatic minimum is its own
+     min-content — so one wide child sized the whole column and the column
+     sized the page. Both halves have to be released: a track that may go
+     below min-content, and items that may be narrower than their content. */
+  .editor { grid-template-columns: minmax(0, 1fr); }
+  .editor > * { min-width: 0; }
+
+  /* Even gutters. The right-hand side carried a 0.35rem scrollbar allowance
+     meant for the panel that scrolls inside itself on a desktop. */
+  .stage[data-stage='make'] .stage-side,
+  .stage[data-stage='send'] .stage-side { padding-inline: var(--gutter); }
+
+  /* Room under the last field for the bar that sticks to the bottom of the
+     screen. Without it the send bar floats over the end of the panel and the
+     message box cannot be reached at all on a short phone. */
+  .stage[data-stage='make'] .step-body,
+  .stage[data-stage='send'] .editor > *:not(.bench-actions) { padding-bottom: 9rem; }
+
+  /* And the browser has to know about the bar too. Scrolling a field into
+     view aligns it to the nearest edge, which on a tall phone is the bottom
+     one — putting the field it just revealed underneath the send bar. */
+  .text-input,
+  .field { scroll-margin-bottom: 7rem; scroll-margin-top: 1rem; }
+
+  /* The lamp and the haze around the bench are drawn well outside it on
+     purpose. `clip` keeps them from widening the page without making this a
+     scroll container, which `hidden` would — and which would strand the
+     sticky card. */
+  .stage[data-stage='make'],
+  .stage[data-stage='send'] { overflow-x: clip; }
+
+  /* The bar at the foot was taking 105px — 12% of the phone — on buttons set
+     larger than their desktop equivalents, over 41px of padding, under a lit
+     gradient. It read as the loudest thing on a screen whose subject is the
+     card. Same two controls, a third less of the screen, and the glow turned
+     down so the card is what shines. */
+  .bench-actions {
+    gap: 0.5rem;
+    padding-block: 0.55rem 0.7rem;
+  }
+
+  .bench-actions .btn {
+    min-height: 46px;   /* still a comfortable thumb target */
+    padding-block: 0.55rem;
+    font-size: 0.9375rem;
+  }
+
+  .btn-back { padding-inline: 1rem; }
+
+  .btn-go {
+    padding-inline: 1.1rem 0.6rem;
+    gap: 0.45rem;
+    font-size: 0.9375rem;
+  }
+
+  .btn-go .btn-well { width: 1.45rem; height: 1.45rem; }
+
+  /* The holo stays — it is the brand — but it stops glowing at the room. */
+  .bench-actions .btn-holo {
+    box-shadow: 0 6px 16px -13px rgba(123, 123, 255, 0.6);
+  }
+}

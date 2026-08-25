@@ -62,6 +62,7 @@
     }
   },
   "devDependencies": {
+    "@fontsource/open-sauce-one": "^5.3.0",
     "@phosphor-icons/react": "^2.1.10",
     "@types/node": "^26.2.0",
     "@types/react": "^19.0.10",

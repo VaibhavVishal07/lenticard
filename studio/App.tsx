@@ -39,6 +39,7 @@ import {
 
 const EASE = [0.32, 0.72, 0, 1] as const;
 
+
 type Stage = 'home' | 'make' | 'send';
 type Step = 'photos' | 'design' | 'words';
 
@@ -143,6 +144,8 @@ export default function App() {
    * the maker.
    */
   const [secret, setSecret] = useState('');
+  /** Somebody is at the message field, so the card comes forward. */
+  const [writing, setWriting] = useState(false);
   const [secretFrom, setSecretFrom] = useState('');
   /** Which way round the card on the bench is facing. */
   const [showBack, setShowBack] = useState(false);
@@ -179,7 +182,18 @@ export default function App() {
       document.documentElement.style.setProperty('--stack-card', size);
     }
 
-    const timer = window.setTimeout(() => setHeld(true), 1400);
+    /**
+     * How long the wait is held open.
+     *
+     * The packet takes 3.3s to open and this used to let go after 1.4s, so
+     * nobody ever saw past the first breath — the tear, the light and the
+     * card were all being drawn to a room nobody was in. It lets go at 2.6s
+     * instead, which is inside the beat where the card is out and holding
+     * still: the page arrives on the reveal rather than cutting away
+     * mid-tear. If the art takes longer than that the packet simply keeps
+     * opening, which is the honest thing for a wait to be doing.
+     */
+    const timer = window.setTimeout(() => setHeld(true), 2600);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -477,6 +491,7 @@ export default function App() {
         {stage !== 'home' && (
         <div
           className="bench-view"
+          data-writing={writing}
           /* The room takes its light from the card in it. Pick a template
              and the bench changes colour, so the two read as one object
              rather than a card sitting on a grey table. */
@@ -508,16 +523,25 @@ export default function App() {
               onAnimationComplete={() => setPulling(false)}
             />
           )}
+          {/* Out of the box, once.
+
+              The old entrance faded the card in from `opacity: 0` on the same
+              spring that moved it, so for the first frames of the pull there
+              was a half-transparent, tilted, undersized card on screen with
+              the finished bench chrome already drawn around it — which read
+              as a glitch rather than as a card being lifted. The opacity is
+              its own short tween now and it is over before the card has
+              travelled anywhere, the rotation is gone (it was squashing the
+              card against the perspective rather than tilting it), and the
+              spring is tighter so the lift lands instead of wobbling. */}
           <motion.div
             className="case-lift"
-            initial={pulling ? { y: '34%', scale: 0.82, rotateX: 22, opacity: 0 } : false}
-            animate={{ y: 0, scale: 1, rotateX: 0, opacity: 1 }}
+            initial={pulling ? { y: '30%', scale: 0.88, opacity: 0 } : false}
+            animate={{ y: 0, scale: 1, opacity: 1 }}
             transition={{
-              type: 'spring',
-              stiffness: 116,
-              damping: 19,
-              mass: 0.9,
-              delay: pulling ? 0.26 : 0,
+              y: { type: 'spring', stiffness: 150, damping: 22, mass: 0.85, delay: pulling ? 0.22 : 0 },
+              scale: { type: 'spring', stiffness: 150, damping: 22, mass: 0.85, delay: pulling ? 0.22 : 0 },
+              opacity: { duration: 0.18, ease: 'linear', delay: pulling ? 0.22 : 0 },
             }}
           >
           <Slab
@@ -559,8 +583,11 @@ export default function App() {
           </motion.div>
         </div>
 
-          {/* What is on the bench, in the language the case already speaks. */}
-          <dl className="bench-plate">
+          {/* What is on the bench, in the language the case already speaks.
+              It arrives after the card does — drawn at full strength around a
+              card that is still on its way up, it read as the page having
+              loaded wrong. */}
+          <dl className="bench-plate" data-settled={!pulling}>
             <div>
               <dt>Frames</dt>
               <dd>
@@ -812,10 +839,14 @@ export default function App() {
                     <section
                       className="reverse-field"
                       aria-labelledby="secret-head"
-                      onFocus={() => setShowBack(true)}
+                      onFocus={() => {
+                        setShowBack(true);
+                        setWriting(true);
+                      }}
                       onBlur={(event) => {
                         if (!event.currentTarget.contains(event.relatedTarget)) {
                           setShowBack(false);
+                          setWriting(false);
                         }
                       }}
                     >
@@ -953,18 +984,59 @@ export default function App() {
             )}
         </div>
 
+      </main>
+
+      <AnimatePresence>
         {!ready && (
-          <div className="loading">
+        /* The wait is the first thing anybody sees, so it is the card shop
+           rather than a progress bar: a packet in the dark, and somebody
+           opening it. One light, on the one thing happening — ambient motion
+           in the corners was competing with the gesture it was there to
+           frame. All of it is drawn in CSS, because waiting for the art to
+           arrive before the waiting screen can draw itself defeats the
+           point. */
+        <motion.div
+          className="loading"
+          exit={{ opacity: 0, scale: 1.06 }}
+          transition={{ duration: 0.45, ease: EASE }}
+        >
+          <span className="loading-spot" aria-hidden />
+
+          <span className="loading-core">
+            {/* A pack, opened, on a loop.
+
+                A ring spinning in the middle told you the page was busy.
+                This tells you what the page is for: the foil tears, the
+                light gets out, and a card comes up out of it. It is the
+                gesture the whole product is an excuse for. */}
+            <span className="pack" aria-hidden>
+              <span className="pack-burst" />
+              <span className="pack-card">
+                <span className="pack-card-foil" />
+              </span>
+              <span className="pack-body">
+                <span className="pack-sheen" />
+                <span className="pack-chip" />
+                <span className="pack-name">LENTICARD</span>
+                <span className="pack-strip" />
+              </span>
+              <span className="pack-lid">
+                <span className="pack-teeth" />
+              </span>
+              {/* The line of light along the tear, before anything has
+                  actually opened. It is the whole beat. */}
+              <span className="pack-seam" />
+            </span>
+
             <span className="mark mark-lg">
               <span className="mark-chip" aria-hidden />
               lenticard
             </span>
-            <span className="loading-bar" aria-hidden>
-              <span />
-            </span>
-          </div>
+            <span className="loading-word">Opening the pack</span>
+          </span>
+        </motion.div>
         )}
-      </main>
+      </AnimatePresence>
 
       {tuning && stage === 'home' && <Tuner />}
 

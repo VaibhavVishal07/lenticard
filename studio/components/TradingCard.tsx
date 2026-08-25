@@ -163,6 +163,19 @@ export function CardReverse({
             ? 'lg'
             : 'xl';
 
+  /**
+   * The size itself, off the same length, but continuous.
+   *
+   * Five steps meant a note one character past a boundary dropped a whole
+   * size, and the drop was visible while somebody was still typing. This is
+   * the same curve the steps were approximating, so a short note is set much
+   * larger than it was and the longest one the field will take still lands
+   * where it used to — which is the size that fits.
+   */
+  const size = written.length
+    ? Math.min(12.6, Math.max(6.2, 32 / Math.pow(written.length, 0.33)))
+    : 12;
+
   return (
     <div
       className="tc-back"
@@ -173,7 +186,33 @@ export function CardReverse({
       }}
     >
       <span className="tc-back-weave" aria-hidden />
+      <span className="tc-back-guilloche" aria-hidden />
       <span className="tc-back-glow" aria-hidden />
+      <span className="tc-back-frame" aria-hidden />
+
+      {/* The house mark, printed big and faint under everything, the way the
+          back of a real card carries one. It is the only thing on this face
+          that is the same on every card, which is what makes the rest of it
+          read as yours. */}
+      <span className="tc-back-seal" aria-hidden>
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+
+      <div className="tc-back-top">
+        <span className="tc-back-house">
+          <i className="tc-back-house-chip" aria-hidden />
+          Lenticard
+        </span>
+        {/* A cancel, the way a posted thing carries one. */}
+        <span className="tc-back-post" aria-hidden>
+          <b>{theme.glyph}</b>
+          <em>{theme.set}</em>
+        </span>
+      </div>
 
       <div className="tc-back-inner">
         <span className="tc-back-eyebrow">
@@ -185,7 +224,11 @@ export function CardReverse({
             the moment somebody starts and they watch the words land on it
             rather than typing at a card that is facing the other way. */}
         {written ? (
-          <div className="secret" data-size={weight}>
+          <div
+            className="secret"
+            data-size={weight}
+            style={{ ['--secret-cqw' as string]: `${size.toFixed(2)}cqw` }}
+          >
             {/* The two layers underneath are the parallax and nothing else —
                 blurred past reading, and never animated. */}
             <span className="secret-layer secret-deep" aria-hidden>{hand(written, false, writing)}</span>
@@ -204,8 +247,9 @@ export function CardReverse({
       </div>
 
       <div className="tc-back-foot">
-        <span>{title}</span>
-        <span>{theme.set} · REVERSE</span>
+        <span className="tc-back-bars" aria-hidden />
+        <span className="tc-back-foot-title">{title}</span>
+        <span className="tc-back-grade">{theme.rarity}</span>
       </div>
 
       {/* The lens array, and the light travelling across it. */}
